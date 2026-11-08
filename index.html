@@ -1097,7 +1097,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
 const app = {
   view: 'home', local: false, code: null, game: null, state: null, mySeat: -1, isHost: false,
-  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, lastShown: -1, lastBld: -1,
+  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, maxPlayers: 3, lastShown: -1, lastBld: -1,
   ui: { modal: null, sel: new Set(), openOpps: new Set() },
   myGames: [], lobbies: [], onlineStatus: 'loading', canWrite: true,
 };
@@ -1344,10 +1344,13 @@ function lobbyHTML() {
     <div class="panel"><div class="muted">Oyun kodu</div><div class="bigcode">${esc(g.code)}</div>
       ${window.NET_MODE === 'p2p' ? netShareHTML(g.code) : '<div class="muted">Arkadaşların bu sayfayı açıp kodu yazsın ya da "Açık lobiler" listesinden katılsın.</div>'}</div>
     <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'}</div>`}</div>
-    <div class="panel"><h2>Oyuncular (${g.players.length}/5)</h2><div class="list">${rows}</div>
-      ${!inGame ? '<div class="muted">Katılma isteğin gönderildi, kurucunun sayfası açıkken birkaç saniyede listeye eklenirsin…</div>' : ''}
-      ${host ? `<div class="row"><button ${g.players.length >= 5 ? 'disabled' : ''} data-k="${cb(hostAddBot)}">+ Bot ekle</button>
+    <div class="panel"><h2>Oyuncular (${g.players.length}/${maxOf(g)})</h2>
+      ${host ? `<div class="row" data-k="${cb(e => { if (e.target.dataset.m) hostSetMax(+e.target.dataset.m); })}">Kaç kişilik: ${[2, 3, 4, 5].map(n => `<button data-m="${n}" ${n < g.players.length ? 'disabled' : ''} class="${maxOf(g) === n ? 'primary' : 'ghost'}">${n} kişi</button>`).join('')}</div>` : ''}
+      <div class="list">${rows}</div>
+      ${!inGame ? (g.players.length >= maxOf(g) ? `<div class="notice">Masa dolu (${maxOf(g)} kişilik). Kurucudan masayı büyütmesini iste; büyütünce otomatik eklenirsin.</div>` : '<div class="muted">Katılma isteğin gönderildi, kurucunun sayfası açıkken birkaç saniyede listeye eklenirsin…</div>') : ''}
+      ${host ? `<div class="row"><button ${g.players.length >= maxOf(g) ? 'disabled' : ''} data-k="${cb(hostAddBot)}">+ Bot ekle</button>
         <button class="primary" ${g.players.length < 2 ? 'disabled' : ''} data-k="${cb(hostStart)}">Oyunu başlat</button></div>
+        <div class="muted">${g.players.length < 2 ? 'Başlatmak için en az 2 oyuncu gerekiyor (bot da olur).' : (g.players.length < maxOf(g) ? `Masa ${maxOf(g)} kişilik; herkes gelmeden de başlatabilirsin.` : 'Masa doldu, başlatabilirsin.')}</div>
         <div class="muted">Oyun boyunca senin sayfanın açık kalması gerekir: hamleleri senin tarayıcın işler.</div>`
         : '<div class="muted">Kurucunun oyunu başlatması bekleniyor.</div>'}
     </div></div>`;
@@ -1806,13 +1809,24 @@ function startLocal() {
 
 
 let noticeN = 1;
+const maxOf = g => Math.min(5, Math.max(2, (g && g.maxPlayers) || 5));
+function hostSetMax(n) {
+  const players = H.players || app.game.players;
+  if (n < players.length || n < 2 || n > 5) return;
+  writeGame({ maxPlayers: n });
+  app.game = { ...app.game, maxPlayers: n };
+  // bekleyenler varsa (masa doluyken bağlananlar) ekle
+  (H.waiting || []).slice().forEach(w => handleRemote(w.uid, { t: 'join', name: w.name }));
+}
 function handleRemote(uid, a) {
   if (!a || !uid) return;
   const g = app.game;
   if (a.t === 'join') {
     if (g.status !== 'lobby') return;
     const players = H.players || g.players;
-    if (players.some(p => p.uid === uid) || players.length >= 5) return;
+    if (players.some(p => p.uid === uid)) return;
+    if (players.length >= maxOf(g)) { H.waiting = [...(H.waiting || []).filter(w => w.uid !== uid), { uid, name: a.name }]; return; }
+    H.waiting = (H.waiting || []).filter(w => w.uid !== uid);
     const name = String(a.name || 'Oyuncu').slice(0, 16);
     H.players = [...players, { uid, name, bot: false }];
     writeGame({ players: H.players, uids: H.players.filter(p => !p.bot).map(p => p.uid) });
@@ -1827,7 +1841,7 @@ function handleRemote(uid, a) {
 
 function hostAddBot() {
   const players = H.players || app.game.players;
-  if (players.length >= 5) return;
+  if (players.length >= maxOf(app.game)) return;
   const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const used = new Set(players.map(p => p.name));
   const name = names.find(n => !used.has(n)) || 'Bot ' + players.length;
@@ -1948,7 +1962,7 @@ function resetView(code) {
 function createGame() {
   const name = app.name.trim().slice(0, 16);
   startHost({ code: randCode(), host: myUid, status: 'lobby', players: [{ uid: myUid, name, bot: false }], uids: [myUid],
-    target: app.target || 3, dupSets: app.dupSets !== false, state: null, notice: null, created: Date.now(), updated: Date.now() }, true, 0);
+    target: app.target || 3, dupSets: app.dupSets !== false, maxPlayers: app.maxPlayers || 3, state: null, notice: null, created: Date.now(), updated: Date.now() }, true, 0);
 }
 
 function startHost(game, fresh, tries) {
