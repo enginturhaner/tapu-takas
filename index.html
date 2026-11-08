@@ -4,6 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Rubik:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/mqtt@5.15.0/dist/mqtt.min.js"></script>
 <style>
 :root{
   /* Yeşil çuha masa: tek tema. Düzen: üstte rakipler, ortada senin masan + kayıt, altta elin */
@@ -1856,6 +1857,48 @@ window.NET_MODE = 'p2p';
 const PEER_PREFIX = 'tapu-takas-v1-';
 const PEER_OPTS = window.PEER_OPTS || {};
 let peer = null, hostConns = new Map(), clientConn = null, reconnectT = null, firstGame = true;
+// Yedek yol: doğrudan bağlantı kurulamazsa (ör. aynı Wi-Fi'de modem izin vermezse) mesajlar herkese açık bir MQTT sunucusu üzerinden gider
+const MQTT_URLS = window.MQTT_URLS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+const TOPIC = code => 'tapu-takas-v1/' + code;
+let mq = null, mqReady = false, mqClients = new Set(), relayT = null, usingRelay = false;
+
+function connectBroker(onReady, onMsg, i = 0) {
+  if (typeof mqtt === 'undefined') return null;
+  const url = MQTT_URLS[i % MQTT_URLS.length];
+  let settled = false;
+  const c = mqtt.connect(url, { clientId: 'tt' + Math.random().toString(36).slice(2, 12), clean: true, reconnectPeriod: 3000, connectTimeout: 7000, keepalive: 30 });
+  const giveUp = setTimeout(() => { if (!settled && i + 1 < MQTT_URLS.length * 2) { settled = true; try { c.end(true); } catch (e) {} mq = connectBroker(onReady, onMsg, i + 1); } }, 8000);
+  c.on('connect', () => { settled = true; clearTimeout(giveUp); mqReady = true; onReady(c); });
+  c.on('close', () => { mqReady = false; });
+  c.on('message', (topic, payload) => { let m; try { m = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; } onMsg(topic, m); });
+  c.on('error', () => {});
+  return c;
+}
+function stopRelay() { clearTimeout(relayT); try { if (mq) mq.end(true); } catch (e) {} mq = null; mqReady = false; mqClients = new Set(); usingRelay = false; }
+function relayPub(topic, obj) { if (mq && mqReady) { try { mq.publish(topic, JSON.stringify(obj), { qos: 1 }); return true; } catch (e) {} } return false; }
+
+// kurucu: yedek kanalı dinle
+function startHostRelay(code) {
+  mq = connectBroker(c => c.subscribe(TOPIC(code) + '/up', { qos: 1 }), (topic, m) => {
+    if (!m || !m.from || !H.game || H.game.code !== code) return;
+    const uid = String(m.from).slice(0, 40);
+    if (m.t === 'hello') {
+      mqClients.add(uid);
+      if (H.game.status === 'lobby') handleRemote(uid, { t: 'join', name: m.name });
+      relayPub(TOPIC(code) + '/down', { t: 'game', game: H.game });
+    } else if (m.t === 'act') { mqClients.add(uid); handleRemote(uid, m.a); }
+  });
+}
+// katılan: doğrudan bağlantı açılmazsa yedek kanala geç
+function startClientRelay(code) {
+  if (usingRelay || typeof mqtt === 'undefined') return false;
+  usingRelay = true;
+  mq = connectBroker(c => {
+    c.subscribe(TOPIC(code) + '/down', { qos: 1 });
+    relayPub(TOPIC(code) + '/up', { t: 'hello', from: myUid, name: app.name.trim().slice(0, 16) });
+  }, (topic, m) => { if (m && m.t === 'game') { app.netStatus = 'ok'; onGame(m.game); } });
+  return true;
+}
 myUid = lsGet('td_uid'); if (!myUid) { myUid = 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); lsSet('td_uid', myUid); }
 
 const randCode = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPRSTUVYZ'[Math.floor(Math.random() * 21)]).join('');
@@ -1883,7 +1926,7 @@ function saveHost() { if (!H.game) return; lsSet('td_host_' + H.game.code, JSON.
 function loadHost(code) { try { return JSON.parse(lsGet('td_host_' + code) || 'null'); } catch (e) { return null; } }
 
 function stopOnline() {
-  clearTimeout(reconnectT);
+  clearTimeout(reconnectT); stopRelay();
   try { if (clientConn) clientConn.close(); } catch (e) {}
   try { if (peer) peer.destroy(); } catch (e) {}
   peer = null; clientConn = null; hostConns = new Map(); firstGame = true;
@@ -1916,6 +1959,7 @@ function startHost(game, fresh, tries) {
   app.view = game.status === 'lobby' ? 'lobby' : 'game'; app.netStatus = 'connecting';
   render();
   peer = new Peer(PEER_PREFIX + game.code, PEER_OPTS);
+  if (!mq) startHostRelay(game.code);
   peer.on('open', () => {
     app.netStatus = 'ok'; saveHost();
     try { history.replaceState(null, '', '#' + game.code); } catch (e) {}
@@ -1930,7 +1974,7 @@ function startHost(game, fresh, tries) {
   peer.on('error', err => {
     const t = err && err.type;
     if (t === 'unavailable-id') {
-      if (fresh && tries < 5) { game.code = randCode(); return startHost(game, true, tries + 1); }
+      if (fresh && tries < 5) { game.code = randCode(); stopRelay(); return startHost(game, true, tries + 1); }
       if (tries < 12) { app.netStatus = 'down'; render(); setTimeout(() => { if (app.code === game.code && app.isHost) startHost(game, false, tries + 1); }, 3000); return; }
       toast('Bu oyun başka bir sekmede açık görünüyor.');
       return;
@@ -1957,6 +2001,7 @@ function writeGame(patch) {
   app.game = H.game;
   saveHost();
   hostConns.forEach(c => { try { if (c.open) c.send({ t: 'game', game: H.game }); } catch (e) {} });
+  if (mqClients.size) relayPub(TOPIC(H.game.code) + '/down', { t: 'game', game: H.game });
   render();
 }
 
@@ -1983,26 +2028,30 @@ function startClient(code) {
   peer.on('error', err => {
     const t = err && err.type;
     if (t === 'peer-unavailable') {
-      if (!app.game) { toast('Bu kodla açık bir oyun bulunamadı. Oyunu kuranın sayfası açık olmalı.'); goHome(); }
-      else { app.netStatus = 'down'; render(); scheduleReconnect(); }
+      if (!app.game && !usingRelay) { toast('Bu kodla açık bir oyun bulunamadı. Oyunu kuranın sayfası açık olmalı.'); goHome(); }
+      else if (!usingRelay) { app.netStatus = 'down'; render(); scheduleReconnect(); }
       return;
     }
-    if (['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(t)) { app.netStatus = 'down'; render(); scheduleReconnect(); }
+    if (['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(t)) { if (!usingRelay) { startClientRelay(app.code); } else { app.netStatus = 'down'; render(); } }
   });
+  // doğrudan bağlantı 6 sn'de kurulmazsa yedek kanalı da aç
+  relayT = setTimeout(() => { if (!(clientConn && clientConn.open)) startClientRelay(code); }, window.FORCE_RELAY ? 0 : 6000);
 }
 
 function connectHost() {
   if (!peer || peer.destroyed) return;
+  if (window.FORCE_RELAY) return;
   const conn = peer.connect(PEER_PREFIX + app.code, { reliable: true });
   clientConn = conn;
-  const t = setTimeout(() => { if (clientConn === conn && !conn.open) { try { conn.close(); } catch (e) {} if (app.game) scheduleReconnect(); else { toast('Oyuna bağlanılamadı. Kod doğru mu, kurucunun sayfası açık mı?'); goHome(); } } }, 12000);
+  const t = setTimeout(() => { if (clientConn === conn && !conn.open) { try { conn.close(); } catch (e) {} if (usingRelay && app.game) return; if (app.game) scheduleReconnect(); else if (usingRelay) { setTimeout(() => { if (!app.game && app.code) { toast('Oyuna bağlanılamadı. Kod doğru mu, kurucunun sayfası açık mı?'); goHome(); } }, 8000); } else { toast('Oyuna bağlanılamadı. Kod doğru mu, kurucunun sayfası açık mı?'); goHome(); } } }, window.FORCE_RELAY ? 1 : 12000);
   conn.on('open', () => { clearTimeout(t); app.netStatus = 'ok'; conn.send({ t: 'hello', uid: myUid, name: app.name.trim().slice(0, 16) }); render(); });
   conn.on('data', msg => { if (msg && msg.t === 'game') onGame(msg.game); });
-  conn.on('close', () => { if (clientConn === conn) { app.netStatus = 'down'; render(); scheduleReconnect(); } });
+  conn.on('close', () => { if (clientConn === conn) { if (usingRelay && mqReady) return; app.netStatus = 'down'; render(); scheduleReconnect(); startClientRelay(app.code); } });
   conn.on('error', () => {});
 }
 function scheduleReconnect() {
   clearTimeout(reconnectT);
+  if (usingRelay && mqReady) return;
   reconnectT = setTimeout(() => {
     if (!peer || peer.destroyed || app.isHost || !app.code) return;
     if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} }
@@ -2025,6 +2074,7 @@ function onGame(g) {
 
 function netSend(a) {
   if (clientConn && clientConn.open) { try { clientConn.send({ t: 'act', a: clone(a) }); return; } catch (e) {} }
+  if (usingRelay && relayPub(TOPIC(app.code) + '/up', { t: 'act', from: myUid, a: clone(a) })) return;
   app.waitV = null; render();
   toast('Bağlantı yok; yeniden bağlanılıyor, birazdan tekrar dene.');
 }
