@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tapu Takas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Rubik:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{
+  /* Yeşil çuha masa: tek tema. Düzen: üstte rakipler, ortada senin masan + kayıt, altta elin */
+  --felt:#0e3a2d; --felt-2:#145040; --felt-3:#1b6450;
+  --ink:#f2efe4; --muted:#a9c2b6; --gold:#efbf4a; --danger:#ff7a6b;
+  --paper:#fbf8ef; --paper-ink:#1d1d1b;
+  --display:'Archivo Black', 'Arial Black', system-ui, sans-serif;
+  --body:'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+#app{height:100%}
+body{background:radial-gradient(ellipse at 50% 35%, var(--felt-3) 0%, var(--felt-2) 35%, var(--felt) 80%), var(--felt);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.35}
+button{font-family:inherit;font-size:14px;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--felt-3);color:var(--ink);font-weight:600}
+button:hover:not(:disabled){filter:brightness(1.15)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--gold);color:#2b2100}
+button.danger{background:#b5382b}
+button.ghost{background:transparent;border:1px solid rgba(255,255,255,.25)}
+button:focus-visible,input:focus-visible,select:focus-visible,.card:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input,select{font-family:inherit;font-size:15px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:var(--ink)}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+.muted{color:var(--muted)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:10px}
+
+/* ---------- ana sayfa ---------- */
+.home{max-width:980px;margin:0 auto;padding:28px 16px 40px;display:flex;flex-direction:column;gap:20px}
+.brand{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.brand h1{font-size:44px;line-height:1;color:var(--gold)}
+.brand p{margin:0;color:var(--muted);max-width:52ch}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.panel{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.panel h2{font-size:20px}
+.list{display:flex;flex-direction:column;gap:6px}
+.list .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,.05);border-radius:10px}
+.code{font-family:var(--display);letter-spacing:.12em}
+.rules{font-size:14px;color:var(--muted)}
+.rules li{margin:3px 0}
+.rules b{color:var(--ink)}
+.notice{background:rgba(239,191,74,.12);border:1px solid rgba(239,191,74,.4);border-radius:12px;padding:10px 12px;font-size:14px}
+
+/* ---------- lobi ---------- */
+.lobby{max-width:620px;margin:0 auto;padding:28px 16px;display:flex;flex-direction:column;gap:16px}
+.bigcode{font-family:var(--display);font-size:56px;letter-spacing:.18em;color:var(--gold);line-height:1}
+
+/* ---------- oyun masası ---------- */
+.game{height:100%;box-shadow:inset 0 0 0 10px #4a2c17, inset 0 0 0 12px #2b190c, inset 0 0 60px rgba(0,0,0,.5);padding:18px !important;display:grid;grid-template-rows:auto auto 1fr auto;gap:8px;padding:8px}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 8px}
+.topbar .turn{font-weight:700}
+.dots{display:inline-flex;gap:4px;vertical-align:middle}
+.dots i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.18);display:inline-block}
+.dots i.on{background:var(--gold)}
+.spacer{flex:1}
+.pill{font-size:12px;padding:3px 8px;border-radius:99px;background:rgba(255,255,255,.1);font-weight:600;white-space:nowrap}
+.pill.gold{background:var(--gold);color:#2b2100}
+.pill.bot{background:#3d5f9a}
+
+.opps{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.opp{flex:1 0 260px;max-width:520px;background:rgba(0,0,0,.2);border-radius:14px;padding:8px 10px;border:2px solid transparent;display:flex;flex-direction:column;gap:6px}
+.opp.active{border-color:var(--gold)}
+.opp .head{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.opp .name{font-weight:700}
+.stacks{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+
+.mid{display:grid;grid-template-columns:1fr 330px;gap:8px;min-height:0;overflow:hidden}
+.side{display:flex;flex-direction:column;gap:8px;min-height:0}
+@media (max-width:820px){.game{height:auto;min-height:100%}.mid{overflow:visible}}
+@media (max-width:820px){.mid{grid-template-columns:1fr}.logbox{max-height:140px}}
+.mine{background:rgba(0,0,0,.16);border-radius:14px;padding:10px;overflow:auto;display:flex;flex-direction:column;gap:10px;border:2px solid transparent}
+.mine.active{border-color:var(--gold)}
+.mine .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bankrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;background:#e8f2dc;color:#1c3a14;font-variant-numeric:tabular-nums}
+.logbox{flex:1;background:rgba(0,0,0,.25);border-radius:14px;padding:10px;overflow:auto;font-size:13px;display:flex;flex-direction:column;gap:4px;min-height:0}
+.logbox div{color:var(--muted)}
+.logbox div:first-child{color:var(--ink);font-weight:600}
+.status{background:var(--gold);color:#2b2100;border-radius:12px;padding:8px 12px;font-weight:700}
+.status.wait{background:rgba(255,255,255,.12);color:var(--ink)}
+
+.handbar{background:rgba(0,0,0,.28);border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.hand{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px}
+
+/* ---------- kartlar ---------- */
+.card{--w:100px;width:var(--w);height:calc(var(--w)*1.42);flex:0 0 auto;border-radius:calc(var(--w)*.08);background:#fffdf7;color:var(--paper-ink);position:relative;user-select:none;
+  box-shadow:0 1px 0 rgba(0,0,0,.25),0 3px 8px rgba(0,0,0,.35);font-size:calc(var(--w)*.105);padding:calc(var(--w)*.045);line-height:1.1}
+.card .inner{position:relative;height:100%;border-radius:calc(var(--w)*.05);overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(0,0,0,.18)}
+.card.click{cursor:pointer;transition:transform .14s, box-shadow .14s}
+.card.click:hover{transform:translateY(-6px);box-shadow:0 10px 18px rgba(0,0,0,.45)}
+.card.sel{outline:4px solid var(--gold);outline-offset:1px;transform:translateY(-8px)}
+.card.md{--w:74px}
+.card.sm{--w:58px}
+.card.xs{--w:30px;padding:2px}
+.card .cv{position:absolute;top:calc(var(--w)*.025);left:calc(var(--w)*.025);z-index:4;min-width:2.3em;height:2.3em;padding:0 .2em;border-radius:99px;background:#fff;color:#1d1d1b;border:.14em solid #1d1d1b;font-size:.72em;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+
+/* tapu */
+.card.prop .ptitle{background:var(--c);color:var(--k);text-align:center;padding:.55em .3em .5em 1.4em;display:flex;flex-direction:column;gap:.15em;min-height:34%;justify-content:center}
+.card.prop .ptitle small{font-size:.5em;letter-spacing:.14em;opacity:.85;font-weight:700}
+.card.prop .ptitle b{font-size:.95em;font-weight:800;text-wrap:balance}
+.card .ladder{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.28em;padding:.3em .55em}
+.card .lr{display:flex;align-items:center;justify-content:space-between;font-size:.82em;font-variant-numeric:tabular-nums}
+.card .pips{display:flex;gap:.15em}
+.card .pips i{width:.55em;height:.75em;border-radius:.1em;background:var(--c);border:1px solid rgba(0,0,0,.35)}
+.card .full{font-size:.58em;color:#666;text-align:center;font-style:italic;margin-top:.1em}
+
+/* para: banknot */
+.card.money{background:#fffdf7}
+.card.money .inner{background:radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--m) 55%, #fff) 0 30%, var(--m) 70%);align-items:center;justify-content:space-between;padding:.55em .3em .5em;border:.16em solid var(--d);color:var(--d)}
+.card.money .guil{position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background:repeating-radial-gradient(circle at 0 0, transparent 0 .55em, color-mix(in srgb, var(--d) 18%, transparent) .55em .62em),
+             repeating-radial-gradient(circle at 100% 100%, transparent 0 .55em, color-mix(in srgb, var(--d) 18%, transparent) .55em .62em)}
+.card.money .inner::after{content:'';position:absolute;inset:.28em;border:1px solid color-mix(in srgb, var(--d) 55%, transparent);border-radius:.35em;pointer-events:none}
+.card.money .mc{position:absolute;font-family:var(--display);font-size:.95em;line-height:1;color:var(--d);z-index:2}
+.card.money .mc.tl{top:.45em;left:.5em}.card.money .mc.tr{top:.45em;right:.5em}
+.card.money .mc.bl{bottom:.45em;left:.5em;transform:rotate(180deg)}.card.money .mc.br{bottom:.45em;right:.5em;transform:rotate(180deg)}
+.card.money .mtop{position:relative;z-index:2;font-size:.46em;font-weight:800;letter-spacing:.14em;text-align:center;line-height:1.2;margin-top:.3em}
+.card.money .medal{position:relative;z-index:2;width:70%;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.card.money .rose{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(var(--d) 0 5deg, color-mix(in srgb, var(--d) 30%, #fff) 5deg 10deg);
+  -webkit-mask:radial-gradient(circle, transparent 0 58%, #000 59% 100%);mask:radial-gradient(circle, transparent 0 58%, #000 59% 100%)}
+.card.money .face{position:relative;width:72%;aspect-ratio:1;border-radius:50%;background:#fffdf3;border:.12em solid var(--d);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 0 0 .18em var(--m)}
+.card.money .face b{font-family:var(--display);font-size:1.9em;line-height:.95;color:var(--d)}
+.card.money .face small{font-size:.42em;font-weight:800;letter-spacing:.12em}
+.card.money .mword{position:relative;z-index:2;font-size:.5em;font-weight:800;letter-spacing:.1em;background:var(--d);color:#fffdf3;padding:.18em .55em;border-radius:99px;margin-bottom:.35em}
+.card.sm.money .mtop,.card.sm.money .mword,.card.sm.money .mc.tr,.card.sm.money .mc.bl{display:none}
+.card.sm.money .inner{justify-content:center}
+.card.sm.money .medal{width:86%}
+.card.md.money .mtop{font-size:.42em}
+.card.xs.money .inner > *:not(.medal){display:none}
+
+.bankrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.bankpile{position:relative;flex:0 0 auto}
+.bankpile .cnt{position:absolute;right:-6px;top:-8px;z-index:9;background:#1d1d1b;color:#fff;font-size:11px;font-weight:800;padding:2px 6px;border-radius:99px;border:1.5px solid var(--gold)}
+.bankpile .bv{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);z-index:9;white-space:nowrap;background:#fffdf3;color:#1d1d1b;border:1.5px solid #1d1d1b;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px}
+.bankrow{padding-bottom:6px}
+.notes{display:flex;gap:4px;flex-wrap:wrap}
+.note{font-size:11px;font-weight:800;padding:3px 7px;border-radius:4px;background:var(--m);color:var(--d);border:1.5px solid var(--d);font-variant-numeric:tabular-nums;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.bldfly .cap{background:#a5341a}
+
+/* hamle */
+.card.act .inner,.card.rent .inner{background:var(--m,#fbefd6);align-items:center;padding:.3em .3em}
+.card.rent .inner{background:#f7f2e4}
+.card .hdr{font-size:.5em;letter-spacing:.16em;font-weight:800;color:#6b2a12;margin-top:1.9em}
+.card .disc{margin:.35em 0 .3em;width:74%;aspect-ratio:1;border-radius:50%;background:#fffdf5;border:.18em solid #a5341a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.3em}
+.card .disc span{font-family:var(--display);font-size:.78em;line-height:1.02;color:#a5341a;text-wrap:balance}
+.card .disc .ico{width:42%;color:#a5341a}
+.card .disc .ico svg{width:100%;height:auto;display:block}
+.card.rent .disc{border:.18em solid #1d1d1b;position:relative}
+.card.rent .disc span{background:#fffdf5;border-radius:50%;width:62%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#1d1d1b;font-size:.85em}
+.card .desc{font-size:.56em;text-align:center;color:#3a3326;padding:0 .3em;line-height:1.15}
+
+/* joker: iki renkli */
+.card.wild2 .inner{background:#fffdf7}
+.card.wild2 .half{flex:1;background:var(--c);color:var(--k);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;padding:.3em}
+.card.wild2 .half b{font-size:.95em;font-weight:800}
+.card.wild2 .half .mini{font-size:.6em;opacity:.92;font-variant-numeric:tabular-nums}
+.card.wild2 .half.bot{transform:rotate(180deg)}
+.card.wild2 .ribbon{height:1.55em;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,#1d1d1b 0 .35em,#2f2f2c .35em .7em);color:#ffd85a;font-size:.6em;font-weight:800;letter-spacing:.12em;border-top:2px solid #ffd85a;border-bottom:2px solid #ffd85a}
+.card.wild2 .ribbon span{white-space:nowrap}
+.card.wild2.flip .inner{transform:rotate(180deg)}
+.card.wild2.placed .half.bot{filter:saturate(.45) brightness(.92)}
+.card.wild2.flip.placed .half.bot{filter:none}
+.card.wild2.flip.placed .half.top{filter:saturate(.45) brightness(.92)}
+.card.wild2.placed{box-shadow:0 0 0 2px #ffd85a,0 3px 8px rgba(0,0,0,.35)}
+
+/* joker: renkli */
+.card.wildany{background:linear-gradient(#fffdf7,#fffdf7) padding-box, conic-gradient(#e0322f,#f28c28,#f6d22a,#1e9d4b,#8fd0f0,#203f9a,#d6429b,#e0322f) border-box;border:calc(var(--w)*.04) solid transparent}
+.card.wildany .inner{align-items:center;justify-content:center;gap:.35em;background:#1d1d1b;color:#fff}
+.card.wildany .jtag{font-family:var(--display);font-size:.9em;letter-spacing:.14em;color:#ffd85a}
+.card.wildany .ring{width:66%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14%}
+.card.wildany .ring span{background:#1d1d1b;border-radius:50%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:.62em;line-height:1.05}
+.card.wildany .jcap{font-size:.55em;text-align:center;padding:0 .4em;color:#ddd}
+.card.wildany .placedbar{position:absolute;left:0;right:0;top:0;text-align:center;font-size:.7em;font-weight:800;padding:.25em;border-radius:calc(var(--w)*.06) calc(var(--w)*.06) 0 0}
+
+/* arka yüz */
+.card.back .inner{background:repeating-linear-gradient(45deg,#8c1f1f 0 5px,#a32b2b 5px 10px);align-items:center;justify-content:center;border:2px solid #f3d9a8}
+.card.back .inner span{font-family:var(--display);color:#f8e7c2;font-size:.85em;text-align:center;line-height:1.05;background:#7a1717;padding:.3em .4em;border-radius:.3em;border:1px solid #f3d9a8}
+.card.xs.back .inner span{display:none}
+
+/* küçük boyutlar */
+.card.sm .ladder,.card.sm .desc,.card.sm .hdr,.card.sm .jcap,.card.sm .mini,.card.sm .ptitle small{display:none}
+.card.sm .ptitle{min-height:46%;padding:.3em .15em;font-size:1.25em}
+.card.sm .ptitle b{font-weight:700}
+.card.sm.prop .ptitle{flex:1}
+.card.sm .cv{display:none}
+.card.sm .disc{width:86%;margin-top:.8em}
+.card.sm .disc .ico{display:none}
+.card.sm .disc span{font-size:.85em}
+.card.sm.wild2 .half b{font-size:1em}
+.card.sm.wild2 .ribbon span{display:none}
+.card.md .desc{font-size:.52em}
+.card.md .full{display:none}
+
+.fan{display:flex}
+.fan .card{margin-left:-20px}
+.fan .card:first-child{margin-left:0}
+
+.stack{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px}
+.stack .pile{position:relative}
+.stack.done .pile::after{content:'TAM SET';position:absolute;right:-8px;top:-9px;background:var(--gold);color:#2b2100;font-size:9px;font-weight:800;padding:2px 5px;border-radius:6px;z-index:20;letter-spacing:.05em}
+.stack .bld{display:flex;gap:3px}
+.stack .bld span{font-size:10px;font-weight:800;padding:2px 5px;border-radius:5px;background:#fffdf5;color:#a5341a}
+.stack.pick{cursor:pointer}
+.stack.pick:hover .pile{filter:brightness(1.1)}
+.stack .lbl{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* masa ortası */
+.center{display:flex;gap:14px;align-items:flex-end;justify-content:center;padding:10px;background:rgba(0,0,0,.18);border-radius:14px;border:1px dashed rgba(255,255,255,.14)}
+.pilebox{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.deckpile{position:relative;width:74px;height:105px}
+.deckpile .card{position:absolute;left:0}
+.discpile{position:relative;width:74px;height:105px;border-radius:8px;border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center}
+.discpile .card{position:absolute;left:0;top:0}
+.lastplay{flex:1;min-width:0;font-size:13px;color:var(--ink);align-self:center}
+.lastplay b{color:var(--gold)}
+
+/* yere atılan kart animasyonu */
+.flyin{position:fixed;left:50%;top:45%;z-index:60;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:10px;animation:fly 2s cubic-bezier(.2,.8,.2,1) forwards}
+.flyin .card{--w:150px;box-shadow:0 18px 40px rgba(0,0,0,.6)}
+.flyin .cap{background:#1d1d1b;color:#fff;padding:7px 14px;border-radius:99px;font-weight:700;font-size:15px;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+@keyframes fly{
+  0%{opacity:0;transform:translate(-50%,calc(-50% + var(--dy))) scale(.45) rotate(var(--rot))}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(0deg)}
+  30%{transform:translate(-50%,-50%) scale(1)}
+  78%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(calc(-50% + 30vw),-50%) scale(.45)}
+}
+
+/* ---------- pencere ---------- */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{background:#123f32;border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:18px;max-width:640px;width:100%;max-height:calc(100% - 20px);overflow:auto;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.modal h3{font-size:20px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts button{text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.opts button small{font-weight:400;color:var(--muted)}
+.opts button.primary small{color:#4a3a00}
+.pickgrid{display:flex;gap:8px;flex-wrap:wrap}
+.who{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;background:rgba(0,0,0,.2)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#2b2b2b;color:#fff;padding:10px 16px;border-radius:12px;z-index:80;max-width:90%;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.win{font-family:var(--display);font-size:36px;color:var(--gold);text-align:center}
+@media (prefers-reduced-motion: reduce){.flyin{animation:fadefly 2s forwards}@keyframes fadefly{0%,80%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-50%)}}.card.click{transition:none}.card.click:hover,.card.sel{transform:none}}
+
+/* ---------- kompakt tapu grupları (batak gibi yelpaze) ---------- */
+.card.ts{--w:46px;padding:2px}
+.card.tl{--w:66px;padding:3px}
+.card.ts .ladder,.card.ts .desc,.card.ts .hdr,.card.ts .jcap,.card.ts .mini,.card.ts .ptitle small,.card.ts .ribbon span,
+.card.tl .ladder,.card.tl .desc,.card.tl .hdr,.card.tl .jcap,.card.tl .mini,.card.tl .ptitle small,.card.tl .ribbon span{display:none}
+.card.ts .ptitle,.card.tl .ptitle{flex:1;padding:1.9em .15em .3em;justify-content:flex-start;font-size:1.05em}
+.card.ts .ptitle b,.card.tl .ptitle b{font-weight:700;word-break:break-word}
+.card.ts .cv,.card.tl .cv{font-size:1em;min-width:1.9em;height:1.9em;border-width:.12em}
+.card.ts.wild2 .half b,.card.tl.wild2 .half b{font-size:.95em}
+.card.ts.wild2 .ribbon,.card.tl.wild2 .ribbon{height:.9em}
+.card.ts.wildany .ring span,.card.tl.wildany .ring span{font-size:.9em}
+.card.ts.wildany .jtag,.card.tl.wildany .jtag{display:none}
+.tile{display:flex;flex-direction:column;gap:4px;padding:5px 6px 5px;border-radius:10px;background:rgba(0,0,0,.22);border:1.5px solid color-mix(in srgb, var(--c) 70%, transparent);cursor:pointer;flex:0 0 auto}
+.tile:hover{background:rgba(0,0,0,.32)}
+.tile:focus-visible{outline:3px solid var(--gold)}
+.tile.done{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.tile .fanrow{position:relative}
+.tile .slice{position:absolute;top:0}
+.tile .slice .card{box-shadow:-2px 0 4px rgba(0,0,0,.35)}
+.tile .tinfo{display:flex;gap:5px;align-items:center;font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tile .tinfo b{color:var(--ink)}
+.tile .tinfo .dot{width:8px;height:8px;border-radius:2px;background:var(--c)}
+.tile .tinfo .val{margin-left:auto;background:#fffdf3;color:#1d1d1b;font-weight:800;padding:0 5px;border-radius:99px}
+.tile .tinfo .b{background:#fffdf5;color:#a5341a;font-weight:800;padding:0 4px;border-radius:4px;font-size:10px}
+.tile.done .tinfo b::after{content:' ✓';color:var(--gold)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+.stacks{gap:6px}
+
+/* el: batak yelpazesi */
+.hand{gap:0;padding:10px 4px 6px}
+.hand .card{margin-left:var(--gap,8px)}
+.hand .card:first-child{margin-left:0}
+.hand .card.click:hover,.hand .card:focus-visible{z-index:30}
+
+/* ---------- mobil ---------- */
+@media (max-width:720px), (max-height:520px){
+  body{font-size:14px}
+  .game{height:auto;min-height:100%;padding:8px !important;box-shadow:inset 0 0 0 4px #4a2c17;gap:6px}
+  .topbar{gap:6px;padding:2px}
+  .topbar .pill:nth-of-type(2),.topbar .pill.bot{display:none}
+  .topbar button{padding:8px 10px;font-size:13px}
+  .opps{flex-direction:column;overflow:visible}
+  .opp{flex:0 0 auto;max-width:none;padding:6px 8px}
+  .opp .stacks{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+  .opp .notes{display:none}
+  .mid{grid-template-columns:1fr;overflow:visible}
+  .mine{padding:8px}
+  .mine .stacks{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .side{flex-direction:column}
+  .center{padding:6px;gap:8px}
+  .deckpile,.discpile{width:52px;height:74px}
+  .center .card.md{--w:52px}
+  .logbox{max-height:110px}
+  .handbar{position:sticky;bottom:0;z-index:20;background:#0b2e24;box-shadow:0 -6px 18px rgba(0,0,0,.45)}
+  .hand .card{--w:78px}
+  .bankrow .card.sm{--w:44px}
+  .veil{align-items:flex-end;padding:0}
+  .modal{border-radius:18px 18px 0 0;max-height:88%;padding:14px}
+  .flyin .card{--w:110px}
+  .flyin .cap{font-size:13px;white-space:normal;max-width:86vw;text-align:center}
+  .brand h1{font-size:34px}
+}
+.game > *, .mid > *, .side > *, .opp, .mine, .stacks, .handbar{min-width:0}
+.mid{grid-template-columns:minmax(0,1fr) 330px}
+@media (max-width:820px){.mid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:720px), (max-height:520px){
+  .topbar .turn{flex:1 1 100%;order:-1;font-size:15px}
+  .opp .head .pill{font-size:11px;padding:2px 6px}
+  .hand{overflow-x:visible}
+}
+
+.handpill{display:none}
+@media (max-width:720px), (max-height:520px){
+  .handpill{display:inline-block}
+  .opp .handfan{display:none}
+  .opp .card.ts{--w:38px}
+  .opp .tile .fanrow{height:54px !important}
+  .opp .tile .tinfo{font-size:10px}
+}
+
+/* para tepsisi: her banknot değeri sabit yerde, adetle */
+.tray{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tray .tlabel{font-size:12px;color:var(--muted);white-space:nowrap}
+.tray .tlabel b{color:var(--ink);font-size:14px}
+.tray .slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;min-width:0;flex:1 1 220px;max-width:340px}
+.tray .slot{background:var(--m);color:var(--d);border:2px solid var(--d);border-radius:6px;padding:2px 1px;display:flex;flex-direction:column;align-items:center;line-height:1.1;font-variant-numeric:tabular-nums}
+.tray .slot b{font-size:11px;font-weight:900}
+.tray .slot span{font-size:11px;font-weight:700}
+.tray .slot.empty{opacity:.25;filter:grayscale(.7)}
+.tray.big .slots{max-width:380px}
+.tray.big .slot b{font-size:13px}.tray.big .slot span{font-size:13px}
+@media (max-width:720px), (max-height:520px){.opp .notes{display:none}.tray .slots{max-width:none}}
+
+/* ================= YUVARLAK MASA ================= */
+.game.rt{grid-template-rows:auto minmax(0,1fr) auto}
+.table{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;min-height:0;padding:4px 6px}
+.table .oval{position:absolute;inset:7% 3% 1%;border-radius:50%;background:radial-gradient(ellipse at 50% 45%,#1f7a5f,#125243 72%);box-shadow:inset 0 0 0 9px #5a361c,inset 0 0 0 12px #2b190c,inset 0 14px 44px rgba(0,0,0,.45);pointer-events:none}
+.rotate-hint{display:none}
+.seats{position:relative;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;min-width:0}
+.seats.n1{justify-content:center}
+.seats.n3 .seat:nth-child(2){margin-top:-4px}
+.seats.n3 .seat:first-child,.seats.n3 .seat:last-child,.seats.n4 .seat:first-child,.seats.n4 .seat:last-child{margin-top:40px}
+.seat{position:relative;background:rgba(0,0,0,.38);border:1.5px solid rgba(255,255,255,.08);border-radius:16px;padding:9px 10px;display:flex;flex-direction:column;gap:7px;min-width:0;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.seat.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(239,191,74,.3),0 6px 18px rgba(0,0,0,.3)}
+.seats .seat{flex:0 1 430px}
+.seat .head{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.seat .name{font-weight:700}
+.seat .av{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:#2b190c;border:2px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.seat .av.me{background:var(--gold);color:#2b2100}
+.seat .fan{display:inline-flex;margin-left:2px}
+.seat .hc{font-size:12px}
+.seats .seat .stacks{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}
+.seat.me{justify-self:center;width:min(780px,100%);border-color:rgba(239,191,74,.5)}
+.seat.me.active{border-color:var(--gold)}
+.seat .hint-move{font-size:12px}
+.pot{position:relative;align-self:center;justify-self:center;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:520px}
+.pot .center{background:rgba(0,0,0,.22);border-style:solid;border-color:rgba(255,255,255,.08)}
+.pot .status{text-align:center}
+.hand.arc{justify-content:center;padding:16px 4px 4px;overflow:visible}
+.hand.arc .hs{transform:rotate(var(--r)) translateY(var(--y));transform-origin:50% 140%;position:relative;transition:transform .14s}
+.hand.arc .hs:hover,.hand.arc .hs:focus-within{z-index:30;transform:rotate(0deg) translateY(-10px)}
+.hand.arc .hs .card{margin-left:0}
+.hand.arc .card.click:hover{transform:none}
+.handbar{background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.35));border-radius:14px}
+
+/* yatay telefon: aynı masa, küçültülmüş */
+
+
+/* dikey telefon: masa yerine alt alta, yan çevirme önerisi */
+@media (max-width:720px), (max-height:520px){
+  .rotate-hint{display:none}
+  .table{display:flex;flex-direction:column;gap:8px;padding:0}
+  .table .oval{display:none}
+  .seats{flex-direction:column;gap:8px}
+  .seats .seat{flex:0 0 auto;margin-top:0 !important}
+  .seat.me{width:100%}
+  .seat.me .stacks{flex-wrap:nowrap;overflow-x:auto}
+  .seat .fan{display:none}
+  .pot{max-width:none;width:100%}
+  .handbar{position:sticky;bottom:0;z-index:20;background:#0b2e24;box-shadow:0 -6px 18px rgba(0,0,0,.45)}
+}
+
+body{overflow-x:hidden}
+.seat{background:rgba(8,28,22,.82)}
+.seat .fan .card.xs{--w:20px}
+.seat .fan .card{margin-left:-13px}
+@media (max-width:720px), (max-height:520px){
+  .hand.arc .hs{transform:none !important}
+  .hand.arc{justify-content:flex-start;padding-top:8px}
+}
+
+.hand.arc .card{margin-left:0 !important}
+html{overflow-x:hidden}
+
+@media (max-width:720px), (max-height:520px){
+  .seat .tray .slots{flex:1 1 100%;max-width:none;min-width:0}
+  .seat{overflow:hidden}
+}
+@media (max-width:720px), (max-height:520px){
+  .seats .seat{align-self:stretch;width:100%}
+  .pot{align-self:stretch}
+}
+@media (max-height:520px){
+  .hand .card{--w:62px}
+  .handbar{padding:4px 8px}
+  .handbar > .row{display:none}
+}
+
+/* rakip özet satırı (telefonda) */
+.osum{display:none}
+.odet{display:contents}
+.minitray{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;width:150px;flex:0 0 auto}
+.minitray span{font-size:10px;font-weight:800;text-align:center;border-radius:3px;padding:1px 0;background:var(--m);color:var(--d);border:1px solid var(--d);font-variant-numeric:tabular-nums}
+.minitray span.z{opacity:.22}
+.bars{display:flex;gap:3px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end}
+.bars i{display:block;width:10px;height:20px;border-radius:2px;background:color-mix(in srgb, var(--c) 25%, transparent);position:relative;overflow:hidden;border:1px solid var(--c)}
+.bars i b{position:absolute;left:0;right:0;bottom:0;background:var(--c)}
+.bars i.done{box-shadow:0 0 0 1.5px var(--gold)}
+@media (max-width:720px), (max-height:520px){
+  .seats .seat.opp{padding:0;gap:0;overflow:hidden}
+  .osum{display:flex;width:100%;gap:10px;align-items:center;text-align:left;background:transparent;color:var(--ink);padding:8px 10px;border-radius:0;font-weight:400;min-height:44px}
+  .osum .oc{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+  .osum .l1{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .osum .l1 .chev{margin-left:auto;font-size:14px;color:var(--muted)}
+  .osum .l2{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .seat.opp .odet{display:none}
+  .seat.opp.open .odet{display:flex;flex-direction:column;gap:7px;padding:0 10px 10px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+  .seat.opp.open .odet .head{display:none}
+  .seat.opp.open .osum{background:rgba(239,191,74,.07)}
+  .seat.opp.open .stacks{flex-wrap:wrap}
+}
+
+@media (max-width:720px), (max-height:520px){
+  .topbar .pill:not(.codepill){display:none}
+  .topbar button{padding:7px 10px;font-size:13px}
+  .seat.me .tray.big .slot b,.seat.me .tray.big .slot span{font-size:11px}
+  .seat.me .tray.big .slots{gap:3px}
+}
+.btnlink{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:10px 14px;border-radius:10px;background:#25a35a;color:#fff;font-weight:600;font-size:14px;text-decoration:none}
+.btnlink:hover{filter:brightness(1.1)}
+
+</style></head><body><div id="app"></div>
+<script>
+// ===== OYUN MOTORU: Monopoly Deal kuralları (+ ev kuralı: yerdeki tapuyu başka renge taşımak 1 hamle) =====
+const Engine = (() => {
+  const COLORS = {
+    brown:  { n: 'Kahverengi', size: 2, rent: [1, 2],       hex: '#8a5a33', ink: '#fff' },
+    lblue:  { n: 'Açık Mavi',  size: 3, rent: [1, 2, 3],    hex: '#8fd0f0', ink: '#10324a' },
+    pink:   { n: 'Pembe',      size: 3, rent: [1, 2, 4],    hex: '#d6429b', ink: '#fff' },
+    orange: { n: 'Turuncu',    size: 3, rent: [1, 3, 5],    hex: '#f28c28', ink: '#fff' },
+    red:    { n: 'Kırmızı',    size: 3, rent: [2, 3, 6],    hex: '#e0322f', ink: '#fff' },
+    yellow: { n: 'Sarı',       size: 3, rent: [2, 4, 6],    hex: '#f6d22a', ink: '#3b3000' },
+    green:  { n: 'Yeşil',      size: 3, rent: [2, 4, 7],    hex: '#1e9d4b', ink: '#fff' },
+    dblue:  { n: 'Lacivert',   size: 2, rent: [3, 8],       hex: '#203f9a', ink: '#fff' },
+    rail:   { n: 'İstasyon',   size: 4, rent: [1, 2, 3, 4], hex: '#2a2a2a', ink: '#fff' },
+    util:   { n: 'İdare',      size: 2, rent: [1, 2],       hex: '#b8c9a3', ink: '#24301a' },
+  };
+  const CK = Object.keys(COLORS);
+
+  const PROPS = {
+    brown: ['Kasımpaşa', 'Dolapdere'],
+    lblue: ['Sultanahmet', 'Karaköy', 'Sirkeci'],
+    pink: ['Beyoğlu', 'Beşiktaş', 'Taksim'],
+    orange: ['Harbiye', 'Şişli', 'Mecidiyeköy'],
+    red: ['Bostancı', 'Erenköy', 'Caddebostan'],
+    yellow: ['Nişantaşı', 'Teşvikiye', 'Maçka'],
+    green: ['Levent', 'Etiler', 'Bebek'],
+    dblue: ['Tarabya', 'Yeniköy'],
+    rail: ['Haydarpaşa Tren İstasyonu', 'Kadıköy Vapur İskelesi', 'Kabataş Vapur İskelesi', 'Sirkeci Tren İstasyonu'],
+    util: ['Elektrik İdaresi', 'Sular İdaresi'],
+  };
+  const PVAL = { brown: 1, lblue: 1, pink: 2, orange: 2, red: 3, yellow: 3, green: 4, dblue: 4, rail: 2, util: 2 };
+
+  const ACTS = {
+    dealbreaker: { name: 'Haciz', v: 5, n: 2, d: 'Bir rakibin tam setini (ev ve otel dahil) al.' },
+    jsn:         { name: 'Reddet', v: 4, n: 3, d: 'Sana yapılan bir hamleyi iptal et. Başka bir Reddet kartını da iptal eder.' },
+    sly:         { name: 'Tapu Devri', v: 3, n: 3, d: 'Bir rakibin tam olmayan setinden bir tapu senedi al.' },
+    forced:      { name: 'Değiş Tokuş', v: 3, n: 3, d: 'Bir tapu senedini bir rakibinkiyle değiştir. Tam setlerden olamaz.' },
+    debt:        { name: 'Tahsilat', v: 3, n: 3, d: 'Seçtiğin bir rakip sana 5M öder.' },
+    birthday:    { name: 'Doğum Günü', v: 2, n: 3, d: 'Herkes sana 2M hediye öder.' },
+    passgo:      { name: 'Tekrar Çek', v: 1, n: 10, d: 'Desteden 2 kart daha çek.' },
+    house:       { name: 'Ev', v: 3, n: 3, d: 'Tamamlanmış bir sete ekle: kira +3M. (İstasyon/İdare hariç)' },
+    hotel:       { name: 'Otel', v: 4, n: 2, d: 'Evli tamamlanmış bir sete ekle: kira +4M. (İstasyon/İdare hariç)' },
+    double:      { name: 'Kirayı İkiye Katla', v: 1, n: 2, d: 'Bir Kira kartıyla birlikte oynanır; kira 2 katına çıkar.' },
+  };
+
+  const CARDS = [];
+  const add = (o, n = 1) => { for (let i = 0; i < n; i++) CARDS.push({ ...o, id: CARDS.length }); };
+  [[10, 1], [5, 2], [4, 3], [3, 3], [2, 5], [1, 6]].forEach(([v, n]) => add({ k: 'money', v, name: v + 'M' }, n));
+  CK.forEach(c => PROPS[c].forEach(name => add({ k: 'prop', color: c, v: PVAL[c], name })));
+  [[['dblue', 'green'], 4, 1], [['lblue', 'brown'], 1, 1], [['pink', 'orange'], 2, 2], [['lblue', 'rail'], 4, 1],
+   [['green', 'rail'], 4, 1], [['red', 'yellow'], 3, 2], [['util', 'rail'], 2, 1]]
+    .forEach(([colors, v, n]) => add({ k: 'wild', colors, v, name: 'Joker Tapu Senedi' }, n));
+  add({ k: 'wild', colors: 'any', v: 0, name: 'Renkli Joker' }, 2);
+  Object.entries(ACTS).forEach(([a, o]) => add({ k: 'act', a, v: o.v, name: o.name }, o.n));
+  [[['dblue', 'green']], [['red', 'yellow']], [['pink', 'orange']], [['lblue', 'brown']], [['rail', 'util']]]
+    .forEach(([colors]) => add({ k: 'rent', colors, v: 1, name: 'Kira' }, 2));
+  add({ k: 'rent', colors: 'any', v: 3, name: 'Joker Kira' }, 3);
+  // toplam 106 kart
+
+  const C = id => CARDS[id];
+  const isRainbow = id => C(id).k === 'wild' && C(id).colors === 'any';
+  const isAct = (id, a) => C(id).k === 'act' && C(id).a === a;
+  const wildOk = (id, color) => { const c = C(id); return c.k === 'prop' ? c.color === color : (c.colors === 'any' || c.colors.includes(color)); };
+  const complete = st => st.cards.length >= COLORS[st.color].size;
+  const pname = (s, i) => s.players[i].name;
+  const log = (s, t) => { s.log.push(t); if (s.log.length > 80) s.log.splice(0, s.log.length - 80); };
+  const err = m => ({ ok: false, err: m });
+  const OK = { ok: true };
+
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function newGame(players, opts = {}) {
+    const s = {
+      players: players.map(p => ({ uid: p.uid, name: p.name, bot: !!p.bot, hand: [], bank: [], stacks: [] })),
+      deck: shuffle(CARDS.map(c => c.id)), discard: [], turn: Math.floor(Math.random() * players.length),
+      playsLeft: 3, phase: 'play', pending: null, winner: null, sid: 1, turnNo: 0, log: [], v: 0, last: null, bld: null,
+      target: Math.min(5, Math.max(2, opts.target || 3)), dupSets: opts.dupSets !== false,
+    };
+    s.players.forEach(p => draw(s, p, 5));
+    log(s, `Oyun başladı! ${s.target} tam set toplayan kazanır${s.dupSets ? ' (aynı renkten iki set de sayılır)' : ' (setler farklı renkte olmalı)'}.`);
+    startTurn(s);
+    return s;
+  }
+
+  function draw(s, p, n) {
+    let got = 0;
+    for (let i = 0; i < n; i++) {
+      if (!s.deck.length) {
+        if (!s.discard.length) break;
+        s.deck = shuffle(s.discard); s.discard = [];
+        log(s, 'Deste bitti, atılan kartlar karıştırıldı.');
+      }
+      p.hand.push(s.deck.pop()); got++;
+    }
+    return got;
+  }
+
+  function startTurn(s) {
+    const p = s.players[s.turn];
+    s.turnNo++; s.playsLeft = 3; s.phase = 'play';
+    const n = draw(s, p, p.hand.length === 0 ? 5 : 2);
+    log(s, `▶ ${p.name} sırasına başladı, ${n} kart çekti.`);
+  }
+
+  function nextTurn(s) {
+    s.turn = (s.turn + 1) % s.players.length;
+    startTurn(s);
+  }
+
+  function rentFor(p, color) {
+    let best = 0;
+    p.stacks.forEach(st => {
+      if (st.color !== color) return;
+      const real = st.cards.filter(id => !isRainbow(id)).length;
+      if (!real) return; // sadece renkli joker ile kira istenemez
+      const sz = COLORS[color].size;
+      let r = COLORS[color].rent[Math.min(st.cards.length, sz) - 1];
+      if (complete(st)) { if (st.house != null) r += 3; if (st.hotel != null) r += 4; }
+      best = Math.max(best, r);
+    });
+    return best;
+  }
+
+  function completeColors(p) { return new Set(p.stacks.filter(complete).map(st => st.color)); }
+  // ev kuralı: aynı renkten ikinci tam set de sayılır (s.dupSets); resmi kural: sadece farklı renkler
+  function countSets(p, s) { return (s && s.dupSets === false) ? completeColors(p).size : p.stacks.filter(complete).length; }
+
+  function findOnTable(p, id) {
+    for (const st of p.stacks) {
+      if (st.cards.includes(id)) return { st, kind: 'card' };
+      if (st.house === id) return { st, kind: 'house' };
+      if (st.hotel === id) return { st, kind: 'hotel' };
+    }
+    return null;
+  }
+
+  // Başkasından gelen joker: alıcının en çok kartı olan uygun renginde başlar (eşitlikte eski rengi korur)
+  function arriveColor(p, id, cur) {
+    const c = C(id); if (c.k !== 'wild') return cur;
+    const opts = c.colors === 'any' ? CK : c.colors;
+    const open = col => p.stacks.filter(st => st.color === col && !complete(st)).reduce((m, st) => Math.max(m, st.cards.length), 0);
+    const all = col => p.stacks.filter(st => st.color === col).reduce((m, st) => m + st.cards.length, 0);
+    let best = cur, bs = [open(cur), all(cur)];
+    opts.forEach(col => { const sc = [open(col), all(col)]; if (sc[0] > bs[0] || (sc[0] === bs[0] && sc[1] > bs[1])) { best = col; bs = sc; } });
+    return best;
+  }
+
+  function placeProp(s, p, id, color) {
+    const sz = COLORS[color].size;
+    let target = null;
+    p.stacks.forEach(st => { if (st.color === color && st.cards.length < sz && (!target || st.cards.length > target.cards.length)) target = st; });
+    if (!target) { target = { sid: s.sid++, color, cards: [], house: null, hotel: null }; p.stacks.push(target); }
+    target.cards.push(id);
+    return target;
+  }
+
+  // Masadan kart kaldır; set bozulursa ev/otel sahibinin bankasına PARA olarak geçer
+  function bldToBank(s, p, ids) {
+    if (!ids.length) return;
+    ids.forEach(id => p.bank.push(id));
+    const seat = s.players.indexOf(p);
+    s.bld = { n: ((s.bld && s.bld.n) || 0) + 1, seat, cards: ids.slice() };
+    const total = ids.reduce((x, id) => x + C(id).v, 0);
+    log(s, `🏠 ${p.name}: set bozuldu, ${ids.map(id => C(id).a === 'house' ? 'Ev' : 'Otel').join(' + ')} bankaya para olarak geçti (+${total}M).`);
+  }
+  // Setten kart çıkınca, aynı renkte boşta duran (tam olmayan gruptaki) tapular otomatik sete geçer
+  function refill(s, p, st) {
+    const sz = COLORS[st.color].size; const added = [];
+    let guard = 0;
+    while (st.cards.length > 0 && st.cards.length < sz && guard++ < 10) {
+      const donors = p.stacks.filter(x => x !== st && x.color === st.color && !complete(x) && x.cards.length);
+      if (!donors.length) break;
+      donors.sort((a, b) => a.cards.length - b.cards.length);
+      const d = donors[0];
+      const k = d.cards.findIndex(x => !isRainbow(x)); const cid = d.cards.splice(k >= 0 ? k : d.cards.length - 1, 1)[0];
+      st.cards.push(cid); added.push(cid);
+      if (!d.cards.length) p.stacks.splice(p.stacks.indexOf(d), 1);
+    }
+    if (added.length) log(s, `${p.name}: boştaki ${added.map(x => C(x).k === 'prop' ? C(x).name : 'joker').join(', ')} ${COLORS[st.color].n} setine geçti${complete(st) ? ', set tam kaldı' : ''}.`);
+  }
+
+  function removeFromTable(s, p, id) {
+    const f = findOnTable(p, id); if (!f) return false;
+    const st = f.st;
+    if (f.kind === 'house') { st.house = null; if (st.hotel != null) { const h = st.hotel; st.hotel = null; bldToBank(s, p, [h]); } }
+    else if (f.kind === 'hotel') st.hotel = null;
+    else {
+      st.cards.splice(st.cards.indexOf(id), 1);
+      refill(s, p, st);
+      if (!complete(st) && (st.house != null || st.hotel != null)) {
+        const ids = [st.house, st.hotel].filter(x => x != null);
+        st.house = null; st.hotel = null;
+        bldToBank(s, p, ids);
+      }
+      if (!st.cards.length) p.stacks.splice(p.stacks.indexOf(st), 1);
+    }
+    return true;
+  }
+
+  const tableIds = p => p.stacks.flatMap(st => [...st.cards, ...(st.house != null ? [st.house] : []), ...(st.hotel != null ? [st.hotel] : [])]);
+  const assetIds = p => [...p.bank, ...tableIds(p)];
+  const assetTotal = p => assetIds(p).reduce((a, id) => a + C(id).v, 0);
+  const colorOnTable = (p, id) => { const f = findOnTable(p, id); return f ? f.st.color : null; };
+
+  function hasFreeMove(p) {
+    return p.stacks.some(st => !complete(st) && st.cards.some(id => C(id).k === 'wild'));
+  }
+  function setLast(s, seat, card, kind, color) {
+    s.last = { n: ((s.last && s.last.n) || 0) + 1, seat, card, kind, color: color || null };
+  }
+
+  function checkWin(s) {
+    for (let k = 0; k < s.players.length; k++) {
+      const i = (s.turn + k) % s.players.length;
+      if (countSets(s.players[i], s) >= (s.target || 3)) {
+        s.phase = 'over'; s.winner = i; s.pending = null;
+        log(s, `🏆 ${pname(s, i)} ${s.target || 3} tam set topladı ve KAZANDI!`);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function afterPlay(s) {
+    if (checkWin(s)) return;
+    if (!s.pending && s.phase === 'play' && s.playsLeft <= 0 && !hasFreeMove(s.players[s.turn])) endTurn(s);
+  }
+
+  function endTurn(s) {
+    const p = s.players[s.turn];
+    if (p.hand.length > 7) { s.phase = 'discard'; log(s, `${p.name} elinde 7 kart kalana kadar kart atmalı.`); return; }
+    nextTurn(s);
+  }
+
+  function respondent(s) {
+    if (!s.pending) return null;
+    return s.pending.stage === 'target' ? s.pending.cur : s.pending.actor;
+  }
+
+  function whoActs(s) {
+    if (s.phase === 'over') return -1;
+    if (s.pending) return respondent(s);
+    return s.turn;
+  }
+
+  // hiçbir seçeneği olmayan yanıtları otomatik geç
+  function autoSettle(s) {
+    let guard = 0;
+    if (checkWin(s)) return;
+    while (s.pending && guard++ < 20) {
+      const pd = s.pending;
+      if (pd.stage === 'actor') {
+        if (!s.players[pd.actor].hand.some(id => isAct(id, 'jsn'))) { log(s, `${pname(s, pd.actor)} karşılık veremedi, hamle iptal.`); advance(s); continue; }
+        break;
+      }
+      const t = s.players[pd.cur];
+      const hasJsn = t.hand.some(id => isAct(id, 'jsn'));
+      if (pd.kind === 'pay' && !hasJsn && assetTotal(t) === 0) { log(s, `${t.name} ödeyecek bir şeyi yok.`); advance(s); continue; }
+      break;
+    }
+    if (!s.pending) afterPlay(s);
+  }
+
+  function advance(s) {
+    const pd = s.pending;
+    pd.queue.shift();
+    if (!pd.queue.length) { s.pending = null; return; }
+    pd.cur = pd.queue[0]; pd.stage = 'target'; pd.jsn = 0;
+  }
+
+  function startPending(s, pd) {
+    pd.cur = pd.queue[0]; pd.stage = 'target'; pd.jsn = 0;
+    s.pending = pd;
+    autoSettle(s);
+  }
+
+  function takeFromHand(p, id) { const i = p.hand.indexOf(id); if (i < 0) return false; p.hand.splice(i, 1); return true; }
+
+  function apply(s, seat, a) {
+    if (!a || typeof a !== 'object') return err('Geçersiz hamle');
+    if (s.phase === 'over') return err('Oyun bitti.');
+    const r = s.pending ? respond(s, seat, a) : act(s, seat, a);
+    if (r.ok) s.v = (s.v || 0) + 1;
+    return r;
+  }
+
+  function act(s, seat, a) {
+    if (seat !== s.turn) return err('Sıra sende değil.');
+    const p = s.players[seat];
+    if (s.phase === 'discard') {
+      if (a.t !== 'discard') return err('Önce fazla kartları atmalısın.');
+      const need = p.hand.length - 7;
+      const ids = [...new Set(a.cards || [])];
+      if (ids.length !== need || !ids.every(id => p.hand.includes(id))) return err(`Tam ${need} kart seçmelisin.`);
+      ids.forEach(id => { takeFromHand(p, id); s.discard.push(id); });
+      log(s, `${p.name} ${need} kart attı.`);
+      nextTurn(s); return OK;
+    }
+    if (a.t === 'end') { log(s, `${p.name} sırasını bitirdi.`); endTurn(s); return OK; }
+
+    if (a.t === 'move') {
+      const id = a.card, f = findOnTable(p, id);
+      if (!f || f.kind !== 'card' || C(id).k !== 'wild') return err('Sadece joker tapu senetlerinin rengi değiştirilebilir.');
+      if (!COLORS[a.color] || !wildOk(id, a.color) || f.st.color === a.color) return err('Bu renge taşınamaz.');
+      const cost = complete(f.st) ? 1 : 0; // ev kuralı: sadece TAM seti bozmak 1 hamle; tam olmayan gruptan joker almak ücretsiz
+      if (s.playsLeft < cost) return err('Seti bozmak 1 hamle ister; hamle hakkın kalmadı.');
+      const from = f.st.color;
+      removeFromTable(s, p, id); placeProp(s, p, id, a.color);
+      s.playsLeft -= cost;
+      log(s, `${p.name} joker tapuyu ${COLORS[from].n} → ${COLORS[a.color].n} taşıdı${cost ? ' (1 hamle)' : ' (ücretsiz)'}.`);
+      setLast(s, seat, id, 'move', a.color);
+      afterPlay(s); return OK;
+    }
+
+    const id = a.card;
+    if (!p.hand.includes(id)) return err('Bu kart elinde değil.');
+    const c = C(id);
+    if (s.playsLeft < 1) return err('Hamle hakkın kalmadı.');
+
+    if (a.t === 'bank') {
+      if (c.k === 'prop' || c.k === 'wild') return err('Tapular bankaya konamaz.');
+      takeFromHand(p, id); p.bank.push(id); s.playsLeft--;
+      setLast(s, seat, id, 'bank'); log(s, `${p.name} bankaya ${c.v}M koydu${c.k !== 'money' ? ` (${c.name})` : ''}.`);
+      afterPlay(s); return OK;
+    }
+    if (a.t === 'prop') {
+      if (c.k !== 'prop' && c.k !== 'wild') return err('Bu kart tapu değil.');
+      const color = c.k === 'prop' ? c.color : a.color;
+      if (!COLORS[color] || !wildOk(id, color)) return err('Renk seç.');
+      takeFromHand(p, id); placeProp(s, p, id, color); s.playsLeft--;
+      setLast(s, seat, id, 'prop', color); log(s, `${p.name} tapu açtı: ${c.k === 'prop' ? c.name : c.name + ' → ' + COLORS[color].n}.`);
+      afterPlay(s); return OK;
+    }
+    if (c.k === 'act') {
+      const target = a.target;
+      const validTarget = () => Number.isInteger(target) && target >= 0 && target < s.players.length && target !== seat;
+      switch (c.a) {
+        case 'passgo':
+          takeFromHand(p, id); s.discard.push(id); s.playsLeft--;
+          setLast(s, seat, id, 'act'); draw(s, p, 2); log(s, `${p.name} Tekrar Çek oynadı, 2 kart çekti.`);
+          afterPlay(s); return OK;
+        case 'house': case 'hotel': {
+          const st = p.stacks.find(x => x.sid === a.sid);
+          if (!st || !complete(st)) return err('Tamamlanmış bir set seç.');
+          if (st.color === 'rail' || st.color === 'util') return err('İstasyon ve İdare setlerine ev/otel konamaz.');
+          if (c.a === 'house' && st.house != null) return err('Bu sette zaten ev var.');
+          if (c.a === 'hotel' && (st.house == null || st.hotel != null)) return err('Otel için sette ev olmalı ve otel olmamalı.');
+          takeFromHand(p, id); st[c.a] = id; s.playsLeft--; setLast(s, seat, id, 'act', st.color);
+          log(s, `${p.name} ${COLORS[st.color].n} setine ${c.a === 'house' ? 'ev' : 'otel'} koydu.`);
+          afterPlay(s); return OK;
+        }
+        case 'debt':
+          if (!validTarget()) return err('Bir rakip seç.');
+          takeFromHand(p, id); s.discard.push(id); s.playsLeft--;
+          setLast(s, seat, id, 'act'); log(s, `${p.name} → ${pname(s, target)}: Tahsilat (5M).`);
+          startPending(s, { kind: 'pay', actor: seat, act: 'debt', amount: 5, queue: [target] });
+          return OK;
+        case 'birthday': {
+          takeFromHand(p, id); s.discard.push(id); s.playsLeft--;
+          const q = s.players.map((_, i) => i).filter(i => i !== seat).map(k => k).sort((x, y) => ((x - seat + s.players.length) % s.players.length) - ((y - seat + s.players.length) % s.players.length));
+          setLast(s, seat, id, 'act'); log(s, `${p.name}: Doğum Günü! Herkes 2M öder.`);
+          startPending(s, { kind: 'pay', actor: seat, act: 'birthday', amount: 2, queue: q });
+          return OK;
+        }
+        case 'sly': case 'forced': {
+          if (!validTarget()) return err('Bir rakip seç.');
+          const t = s.players[target];
+          const ft = findOnTable(t, a.take);
+          if (!ft || ft.kind !== 'card' || complete(ft.st)) return err('Rakibin tamamlanmamış bir setinden tapu seç.');
+          if (c.a === 'forced') {
+            const fg = findOnTable(p, a.give);
+            if (!fg || fg.kind !== 'card' || complete(fg.st)) return err('Vereceğin tapu tamamlanmamış bir setten olmalı.');
+          }
+          takeFromHand(p, id); s.discard.push(id); s.playsLeft--;
+          setLast(s, seat, id, 'act');
+          log(s, c.a === 'sly' ? `${p.name} → ${t.name}: Tapu Devri (${C(a.take).k === 'prop' ? C(a.take).name : 'Joker Tapu Senedi'}).`
+            : `${p.name} → ${t.name}: Değiş Tokuş.`);
+          startPending(s, { kind: 'steal', actor: seat, act: c.a, take: a.take, give: a.give ?? null, queue: [target] });
+          return OK;
+        }
+        case 'dealbreaker': {
+          if (!validTarget()) return err('Bir rakip seç.');
+          const st = s.players[target].stacks.find(x => x.sid === a.sid);
+          if (!st || !complete(st)) return err('Rakibin tamamlanmış bir setini seç.');
+          takeFromHand(p, id); s.discard.push(id); s.playsLeft--;
+          setLast(s, seat, id, 'act'); log(s, `${p.name} → ${pname(s, target)}: Haciz! (${COLORS[st.color].n} seti)`);
+          startPending(s, { kind: 'steal', actor: seat, act: 'dealbreaker', sid: a.sid, queue: [target] });
+          return OK;
+        }
+        case 'jsn': return err('Reddet sadece sana yapılan bir hamleye karşı oynanır. İstersen bankaya koy.');
+        case 'double': return err('Kirayı İkiye Katla bir Kira kartıyla birlikte oynanır.');
+      }
+    }
+    if (c.k === 'rent') {
+      if (c.colors !== 'any' && !c.colors.includes(a.color)) return err('Bu kart bu renk için değil.');
+      if (!COLORS[a.color]) return err('Renk seç.');
+      const base = rentFor(p, a.color);
+      if (!base) return err('Bu renkte kira alabileceğin tapun yok.');
+      const doubles = [...new Set(a.doubles || [])];
+      if (!doubles.every(d => p.hand.includes(d) && isAct(d, 'double'))) return err('Geçersiz İkiye Katla kartı.');
+      if (s.playsLeft < 1 + doubles.length) return err('Yeterli hamle hakkın yok.');
+      let q;
+      if (c.colors === 'any') { if (!Number.isInteger(a.target) || a.target === seat || !s.players[a.target]) return err('Bir rakip seç.'); q = [a.target]; }
+      else { const n = s.players.length; q = s.players.map((_, i) => i).filter(i => i !== seat).sort((x, y) => ((x - seat + n) % n) - ((y - seat + n) % n)); }
+      takeFromHand(p, id); s.discard.push(id); doubles.forEach(d => { takeFromHand(p, d); s.discard.push(d); });
+      s.playsLeft -= 1 + doubles.length;
+      const amount = base * Math.pow(2, doubles.length);
+      setLast(s, seat, id, 'rent', a.color); s.last.doubles = doubles.length; s.last.amount = amount;
+      log(s, `${p.name} ${COLORS[a.color].n} için ${amount}M kira istedi${doubles.length ? ` (x${Math.pow(2, doubles.length)})` : ''}${c.colors === 'any' ? ' → ' + pname(s, a.target) : ' (herkesten)'}.`);
+      startPending(s, { kind: 'pay', actor: seat, act: 'rent', amount, color: a.color, queue: q });
+      return OK;
+    }
+    return err('Bu kartla bu hamle yapılamaz.');
+  }
+
+  function respond(s, seat, a) {
+    const pd = s.pending;
+    const who = respondent(s);
+    if (seat !== who) return err('Şu an yanıt sırası sende değil.');
+    const p = s.players[seat];
+    if (a.t === 'jsn') {
+      const j = p.hand.find(id => isAct(id, 'jsn'));
+      if (j == null) return err('Elinde Reddet kartı yok.');
+      takeFromHand(p, j); s.discard.push(j); pd.jsn++;
+      pd.stage = pd.stage === 'target' ? 'actor' : 'target';
+      log(s, `✋ ${p.name}: Reddet!`); setLast(s, seat, j, 'jsn');
+      autoSettle(s); return OK;
+    }
+    if (pd.stage === 'actor') {
+      if (a.t !== 'accept') return err('Reddet oyna ya da kabul et.');
+      log(s, `${p.name} kabul etti, hamle iptal oldu.`);
+      advance(s); autoSettle(s); return OK;
+    }
+    // hedef yanıtı
+    const actor = s.players[pd.actor];
+    if (pd.kind === 'steal') {
+      if (a.t !== 'accept') return err('Reddet oyna ya da kabul et.');
+      if (pd.act === 'dealbreaker') {
+        const st = p.stacks.find(x => x.sid === pd.sid);
+        if (st) { p.stacks.splice(p.stacks.indexOf(st), 1); st.sid = s.sid++; actor.stacks.push(st); }
+        log(s, `${actor.name}, ${p.name}'in ${st ? COLORS[st.color].n : ''} setini aldı.`);
+      } else {
+        const col = colorOnTable(p, pd.take);
+        if (col && removeFromTable(s, p, pd.take)) placeProp(s, actor, pd.take, arriveColor(actor, pd.take, col));
+        if (pd.act === 'forced') {
+          const gc = colorOnTable(actor, pd.give);
+          if (gc && removeFromTable(s, actor, pd.give)) placeProp(s, p, pd.give, arriveColor(p, pd.give, gc));
+          log(s, `Takas tamam: ${actor.name} ↔ ${p.name}.`);
+        } else log(s, `${actor.name} tapuyu aldı.`);
+      }
+      advance(s); autoSettle(s); return OK;
+    }
+    // ödeme
+    if (a.t !== 'pay') return err('Ödeme için kart seç ya da Reddet oyna.');
+    const ids = [...new Set(a.cards || [])];
+    const own = new Set(assetIds(p));
+    if (!ids.every(id => own.has(id))) return err('Sadece banka ve masandaki kartlarla ödeyebilirsin.');
+    const sum = ids.reduce((x, id) => x + C(id).v, 0);
+    const total = assetTotal(p);
+    if (sum < pd.amount && sum < total) return err(`En az ${pd.amount}M seçmelisin (ya da her şeyini).`);
+    const moved = [];
+    ids.forEach(id => {
+      if (p.bank.includes(id)) { p.bank.splice(p.bank.indexOf(id), 1); actor.bank.push(id); moved.push(C(id).v + 'M'); return; }
+      const f = findOnTable(p, id); if (!f) return;
+      if (f.kind === 'card') { const col = f.st.color; removeFromTable(s, p, id); placeProp(s, actor, id, arriveColor(actor, id, col)); moved.push(C(id).k === 'prop' ? C(id).name : 'Joker Tapu Senedi'); }
+      else { removeFromTable(s, p, id); actor.bank.push(id); moved.push(f.kind === 'house' ? 'Ev' : 'Otel'); }
+    });
+    log(s, `${p.name} → ${actor.name}: ${sum}M ödedi${moved.length ? ' (' + moved.join(', ') + ')' : ''}.`);
+    advance(s); autoSettle(s); return OK;
+  }
+
+  return { COLORS, CK, CARDS, ACTS, C, isRainbow, isAct, wildOk, complete, rentFor, completeColors, countSets, findOnTable, assetIds, assetTotal, tableIds,
+    newGame, apply, whoActs, respondent, colorOnTable, hasFreeMove };
+})();
+if (typeof module !== 'undefined') module.exports = Engine;
+
+// ===== BOT =====
+const Bot = (() => {
+  const E = (typeof Engine !== 'undefined') ? Engine : require('./engine.js');
+  const { COLORS, C, isAct, isRainbow, complete, rentFor, assetIds, assetTotal } = E;
+
+  const others = (s, seat) => s.players.map((_, i) => i).filter(i => i !== seat);
+  const colorCount = (p, color) => p.stacks.filter(st => st.color === color).reduce((m, st) => Math.max(m, st.cards.length), 0);
+  const need = (p, color) => COLORS[color].size - colorCount(p, color);
+
+  function bestWildColor(p, id) {
+    const c = C(id);
+    const opts = c.colors === 'any' ? p.stacks.filter(st => !complete(st)).map(st => st.color) : c.colors;
+    const list = opts.length ? opts : E.CK;
+    let best = list[0], score = -99;
+    list.forEach(col => {
+      const has = colorCount(p, col), n = COLORS[col].size;
+      if (c.colors === 'any' && has === 0) return;
+      const sc = (has >= n ? -5 : has * 3 - (n - has)) + COLORS[col].rent[n - 1] / 10;
+      if (sc > score) { score = sc; best = col; }
+    });
+    return best;
+  }
+
+  // ödeme için en ucuz kart seçimi
+  function choosePayment(p, amount) {
+    const total = assetTotal(p);
+    const all = assetIds(p).filter(id => C(id).v > 0);
+    if (total <= amount) return all;
+    const bank = [...p.bank].sort((a, b) => C(a).v - C(b).v);
+    let pick = [], sum = 0;
+    // önce tek kartla tam/üstü kapatan en küçük banka kartı
+    const single = bank.find(id => C(id).v >= amount);
+    const bankSum = bank.reduce((x, id) => x + C(id).v, 0);
+    if (bankSum >= amount) {
+      for (const id of bank) { if (sum >= amount) break; pick.push(id); sum += C(id).v; }
+      if (single != null && C(single).v < sum) { pick = [single]; sum = C(single).v; }
+    } else {
+      pick = [...bank]; sum = bankSum;
+      const tbl = p.stacks.flatMap(st => [...(st.hotel != null ? [st.hotel] : []), ...(st.house != null ? [st.house] : []),
+        ...st.cards.map(id => id)].map(id => ({ id, done: complete(st) })))
+        .filter(o => C(o.id).v > 0)
+        .sort((a, b) => (a.done - b.done) || (C(a.id).v - C(b.id).v));
+      for (const o of tbl) { if (sum >= amount) break; pick.push(o.id); sum += C(o.id).v; }
+    }
+    // fazlalığı at
+    pick.sort((a, b) => C(b).v - C(a).v);
+    for (let i = 0; i < pick.length; i++) { if (sum - C(pick[i]).v >= amount) { sum -= C(pick[i]).v; pick.splice(i, 1); i--; } }
+    return pick;
+  }
+
+  function respond(s, seat) {
+    const pd = s.pending, p = s.players[seat];
+    const hasJ = p.hand.some(id => isAct(id, 'jsn'));
+    if (pd.stage === 'actor') {
+      const worth = pd.act === 'dealbreaker' || (pd.kind === 'pay' && pd.amount >= 4) || pd.act === 'sly' || pd.act === 'forced';
+      return hasJ && worth ? { t: 'jsn' } : { t: 'accept' };
+    }
+    if (pd.kind === 'steal') {
+      let use = pd.act === 'dealbreaker';
+      if (pd.act !== 'dealbreaker') { const col = E.colorOnTable(p, pd.take); use = col && colorCount(p, col) >= COLORS[col].size - 1; }
+      return hasJ && use ? { t: 'jsn' } : { t: 'accept' };
+    }
+    if (hasJ && (pd.amount >= 5 || pd.amount >= assetTotal(p) * 0.6) && assetTotal(p) > 0) return { t: 'jsn' };
+    return { t: 'pay', cards: choosePayment(p, pd.amount) };
+  }
+
+  function play(s, seat) {
+    const p = s.players[seat], hand = p.hand;
+    const opp = others(s, seat);
+    const by = a => hand.filter(id => isAct(id, a));
+    if (s.phase === 'discard') {
+      const n = hand.length - 7;
+      const rank = id => { const c = C(id); if (isAct(id, 'jsn')) return 100; if (c.k === 'prop' || c.k === 'wild') return 50 + c.v; return c.v; };
+      return { t: 'discard', cards: [...hand].sort((a, b) => rank(a) - rank(b)).slice(0, n) };
+    }
+    if (s.playsLeft <= 0) return { t: 'end' };
+    // 1) Başlangıçtan Geç
+    if (by('passgo').length && hand.length < 9) return { t: 'passgo', card: by('passgo')[0] };
+    // 2) Anlaşma Bozan
+    for (const d of by('dealbreaker')) {
+      let best = null;
+      opp.forEach(t => s.players[t].stacks.forEach(st => { if (complete(st)) { const sc = COLORS[st.color].rent[COLORS[st.color].size - 1] + (st.house != null ? 3 : 0); if (!best || sc > best.sc) best = { t, sid: st.sid, sc }; } }));
+      if (best) return { t: 'play', card: d, target: best.t, sid: best.sid };
+    }
+    // 3) tapular
+    const prop = hand.find(id => C(id).k === 'prop');
+    if (prop != null) return { t: 'prop', card: prop };
+    const wild = hand.find(id => C(id).k === 'wild' && (C(id).colors !== 'any' || p.stacks.some(st => !complete(st))));
+    if (wild != null) return { t: 'prop', card: wild, color: bestWildColor(p, wild) };
+    // 4) Sinsi Anlaşma
+    for (const d of by('sly')) {
+      let best = null;
+      opp.forEach(t => s.players[t].stacks.forEach(st => { if (complete(st)) return; st.cards.forEach(id => {
+        const sc = (colorCount(p, st.color) + 1 >= COLORS[st.color].size ? 10 : colorCount(p, st.color)) + C(id).v / 2;
+        if (!best || sc > best.sc) best = { t, take: id, sc };
+      }); }));
+      if (best) return { t: 'play', card: d, target: best.t, take: best.take };
+    }
+    // 5) Zorla Takas: sadece işe yarıyorsa
+    for (const d of by('forced')) {
+      const mine = p.stacks.filter(st => !complete(st)).flatMap(st => st.cards.map(id => ({ id, col: st.color, have: st.cards.length })));
+      if (!mine.length) break;
+      const give = mine.sort((a, b) => a.have - b.have || C(a.id).v - C(b.id).v)[0];
+      let best = null;
+      opp.forEach(t => s.players[t].stacks.forEach(st => { if (complete(st) || st.color === give.col) return; const have = colorCount(p, st.color);
+        if (have > give.have - 1 && have >= 1) st.cards.forEach(id => { const sc = have + (have + 1 >= COLORS[st.color].size ? 5 : 0); if (!best || sc > best.sc) best = { t, take: id, sc }; }); }));
+      if (best) return { t: 'play', card: d, target: best.t, take: best.take, give: give.id };
+    }
+    // 6) Kira
+    const oppMoney = opp.reduce((x, t) => x + assetTotal(s.players[t]), 0);
+    if (oppMoney > 0) {
+      let best = null;
+      hand.filter(id => C(id).k === 'rent').forEach(id => {
+        const cols = C(id).colors === 'any' ? E.CK : C(id).colors;
+        cols.forEach(col => { const r = rentFor(p, col); if (!r) return;
+          const mult = C(id).colors === 'any' ? 1 : opp.length;
+          const sc = r * mult + (C(id).colors === 'any' ? 0 : 0.5);
+          if (!best || sc > best.sc) best = { id, col, r, sc }; });
+      });
+      if (best && best.r >= 1) {
+        const dbl = by('double').slice(0, Math.max(0, s.playsLeft - 1));
+        const a = { t: 'play', card: best.id, color: best.col, doubles: best.r >= 2 ? dbl : [] };
+        if (C(best.id).colors === 'any') a.target = opp.slice().sort((x, y) => assetTotal(s.players[y]) - assetTotal(s.players[x]))[0];
+        return a;
+      }
+    }
+    // 7) Borç / Doğum günü
+    if (by('debt').length) { const t = opp.slice().sort((x, y) => assetTotal(s.players[y]) - assetTotal(s.players[x]))[0]; if (assetTotal(s.players[t]) > 0) return { t: 'play', card: by('debt')[0], target: t }; }
+    if (by('birthday').length && oppMoney > 0) return { t: 'play', card: by('birthday')[0] };
+    // 8) Ev / Otel
+    for (const h of by('house')) { const st = p.stacks.find(x => complete(x) && x.house == null && x.color !== 'rail' && x.color !== 'util'); if (st) return { t: 'play', card: h, sid: st.sid }; }
+    for (const h of by('hotel')) { const st = p.stacks.find(x => complete(x) && x.house != null && x.hotel == null); if (st) return { t: 'play', card: h, sid: st.sid }; }
+    // 9) Para bankaya
+    const money = hand.filter(id => C(id).k === 'money').sort((a, b) => C(b).v - C(a).v)[0];
+    if (money != null) return { t: 'bank', card: money };
+    // 10) Elde fazla kart varsa işe yaramayanları bankaya koy
+    if (hand.length > 5 || assetTotal(p) < 3) {
+      const junk = hand.filter(id => (C(id).k === 'act' || C(id).k === 'rent') && !isAct(id, 'jsn') && !isAct(id, 'dealbreaker')).sort((a, b) => C(a).v - C(b).v)[0];
+      if (junk != null) return { t: 'bank', card: junk };
+    }
+    return { t: 'end' };
+  }
+
+  // tek API: 'play' kısayolunu motorun beklediği biçime çevir
+  function decide(s, seat) {
+    const a = s.pending ? respond(s, seat) : play(s, seat);
+    if (a.t === 'play') { const c = C(a.card); a.t = c.k === 'rent' ? 'rent' : c.a; }
+    return a;
+  }
+  function fallback(s, seat) {
+    if (s.pending) {
+      const pd = s.pending;
+      if (pd.stage === 'actor' || pd.kind === 'steal') return { t: 'accept' };
+      return { t: 'pay', cards: choosePayment(s.players[seat], pd.amount) };
+    }
+    if (s.phase === 'discard') return play(s, seat);
+    return { t: 'end' };
+  }
+  return { decide, fallback, choosePayment };
+})();
+if (typeof module !== 'undefined') module.exports = Bot;
+
+// ===== ARAYÜZ + ONLINE =====
+const { COLORS, C } = Engine;
+const $root = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+const app = {
+  view: 'home', local: false, code: null, game: null, state: null, mySeat: -1, isHost: false,
+  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, lastShown: -1, lastBld: -1,
+  ui: { modal: null, sel: new Set(), openOpps: new Set() },
+  myGames: [], lobbies: [], onlineStatus: 'loading', canWrite: true,
+};
+let db = null, userCap = null, myUid = null;
+let unsubGame = null, unsubActs = null, H = { state: null, ready: false, processed: new Set(), writing: false, dirty: false };
+let botTimer = null, lastNoticeN = 0, sentAt = 0, sentV = -1;
+
+// ---------- callback kayıt sistemi ----------
+let CB = [];
+const cb = fn => { CB.push(fn); return CB.length - 1; };
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-k]');
+  if (!el || el.disabled) return;
+  const fn = CB[+el.dataset.k]; if (fn) fn(e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && app.ui.modal && app.ui.modal.closable !== false) { closeModal(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-k]')) { e.preventDefault(); e.target.click(); }
+});
+
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ---------- kart çizimi (gerçek kart görünümü) ----------
+const MONEY_TINT = { 1: '#f3e7c0', 2: '#f6cbbb', 3: '#cfe8bd', 4: '#c3e0f3', 5: '#dfc9ef', 10: '#f8d08f' };
+const MONEY_INK = { 1: '#7a5c12', 2: '#9b3420', 3: '#2b6324', 4: '#1f5682', 5: '#55327f', 10: '#9a4f00' };
+const MONEY_WORD = { 1: 'BİR', 2: 'İKİ', 3: 'ÜÇ', 4: 'DÖRT', 5: 'BEŞ', 10: 'ON' };
+const RAINBOW = 'conic-gradient(#e0322f,#f28c28,#f6d22a,#1e9d4b,#8fd0f0,#203f9a,#d6429b,#8a5a33,#e0322f)';
+const ACT_ICON = {
+  dealbreaker: '<path d="M6 30 L30 6 M10 6 h20 v20" />',
+  jsn: '<circle cx="18" cy="18" r="12"/><path d="M9.5 26.5 L26.5 9.5"/>',
+  sly: '<path d="M8 22 q10 -16 20 0"/><path d="M24 16 l4 6 -7 1"/>',
+  forced: '<path d="M7 13 h20 l-5 -5 M29 23 h-20 l5 5"/>',
+  debt: '<rect x="7" y="11" width="22" height="14" rx="2"/><circle cx="18" cy="18" r="3.5"/>',
+  birthday: '<rect x="8" y="17" width="20" height="11" rx="1.5"/><path d="M13 17 v-4 M18 17 v-5 M23 17 v-4"/>',
+  passgo: '<path d="M8 18 h18 M20 11 l7 7 -7 7"/>',
+  house: '<path d="M7 18 L18 8 L29 18 M10 16 v12 h16 v-12"/>',
+  hotel: '<rect x="9" y="8" width="18" height="20" rx="1"/><path d="M13 13 h3 M20 13 h3 M13 18 h3 M20 18 h3 M16 28 v-5 h4 v5"/>',
+  double: '<text x="18" y="24" text-anchor="middle" font-size="15" font-weight="800" stroke="none" fill="currentColor">x2</text>',
+};
+const icon = a => `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${ACT_ICON[a] || ''}</svg>`;
+
+function ladderHTML(color) {
+  const col = COLORS[color];
+  return col.rent.map((r, i) => `<span class="lr"><span class="pips">${'<i></i>'.repeat(i + 1)}</span><b>${r}M</b></span>`).join('')
+    + `<span class="full">${col.size} kart = tam set</span>`;
+}
+
+function cardHTML(id, o = {}) {
+  const c = C(id), sz = o.size || '';
+  const k = o.k != null ? ` data-k="${o.k}" tabindex="0" role="button"` : '';
+  const cls = `card ${sz} ${o.k != null ? 'click' : ''} ${o.sel ? 'sel' : ''}`;
+  const val = c.v ? `<div class="cv">${c.v}M</div>` : '';
+  if (c.k === 'money') {
+    return `<div class="${cls} money" style="--m:${MONEY_TINT[c.v]};--d:${MONEY_INK[c.v]}"${k} title="${c.v}M para">
+      <div class="inner"><div class="guil"></div>
+        <div class="mc tl">${c.v}</div><div class="mc tr">${c.v}</div><div class="mc bl">${c.v}</div><div class="mc br">${c.v}</div>
+        <div class="mtop">TAPU TAKAS<br>BANKASI</div>
+        <div class="medal"><div class="rose"></div><div class="face"><b>${c.v}</b><small>MİLYON</small></div></div>
+        <div class="mword">${MONEY_WORD[c.v]} MİLYON</div>
+      </div></div>`;
+  }
+  if (c.k === 'prop') {
+    const col = COLORS[c.color];
+    return `<div class="${cls} prop" style="--c:${col.hex};--k:${col.ink}"${k} title="${esc(c.name)} · ${col.n}">${val}
+      <div class="inner"><div class="ptitle"><small>TAPU SENEDİ</small><b>${esc(c.name)}</b></div>
+      <div class="ladder">${ladderHTML(c.color)}</div></div></div>`;
+  }
+  if (c.k === 'wild') {
+    if (c.colors === 'any') {
+      const placed = o.color ? COLORS[o.color] : null;
+      return `<div class="${cls} wildany"${k} title="Renkli Joker: her renge girer, para değeri yok">
+        <div class="inner"><div class="jtag">JOKER</div><div class="ring" style="background:${RAINBOW}"><span>${placed ? esc(placed.n) : 'HER<br>RENK'}</span></div>
+        <div class="jcap">${placed ? `Şu an <b>${placed.n}</b>` : 'Herhangi bir renge girer'}</div></div>
+        ${placed ? `<div class="placedbar" style="background:${placed.hex};color:${placed.ink}">${placed.n}</div>` : ''}</div>`;
+    }
+    const [a, b] = c.colors;
+    const flip = o.color && o.color === b;
+    const half = (col, cls2) => `<div class="half ${cls2}" style="--c:${COLORS[col].hex};--k:${COLORS[col].ink}"><b>${COLORS[col].n}</b><div class="mini">${COLORS[col].rent.map(r => r + 'M').join(' · ')}</div></div>`;
+    return `<div class="${cls} wild2 ${flip ? 'flip' : ''} ${o.color ? 'placed' : ''}"${k} title="Joker Tapu Senedi: ${COLORS[a].n} veya ${COLORS[b].n}">
+      <div class="inner">${half(a, 'top')}<div class="ribbon"><span>⇅ JOKER TAPU</span></div>${half(b, 'bot')}</div>${val}</div>`;
+  }
+  if (c.k === 'rent') {
+    const any = c.colors === 'any';
+    const bg = any ? RAINBOW : `linear-gradient(90deg,${COLORS[c.colors[0]].hex} 50%,${COLORS[c.colors[1]].hex} 50%)`;
+    const cap = any ? 'Seçtiğin tek rakip, istediğin renk için kira öder.' : `${COLORS[c.colors[0]].n} ya da ${COLORS[c.colors[1]].n}: herkes öder.`;
+    return `<div class="${cls} rent"${k} title="${any ? 'Joker Kira' : 'Kira'}: ${cap}">${val}<div class="inner"><div class="hdr">HAMLE KARTI</div>
+      <div class="disc" style="background:${bg}"><span>KİRA</span></div><div class="desc">${cap}</div></div></div>`;
+  }
+  const A = Engine.ACTS[c.a];
+  return `<div class="${cls} act a-${c.a}" style="--m:${MONEY_TINT[c.v]}"${k} title="${A.name}: ${A.d}">${val}<div class="inner"><div class="hdr">HAMLE KARTI</div>
+    <div class="disc"><div class="ico">${icon(c.a)}</div><span>${A.name}</span></div><div class="desc">${A.d}</div></div></div>`;
+}
+const backHTML = (size = 'sm') => `<div class="card ${size} back"><div class="inner"><span>TAPU<br>TAKAS</span></div></div>`;
+
+function stackHTML(st, size, o = {}) {
+  const w = size === 'sm' ? 58 : 74, h = w * 1.42, off = size === 'sm' ? 20 : 27;
+  const done = Engine.complete(st);
+  const cards = st.cards.map((id, i) => {
+    const k = o.cardK ? o.cardK(id) : null;
+    return `<div style="position:absolute;top:${i * off}px;left:0;z-index:${i + 1}">${cardHTML(id, { size, color: st.color, k, sel: o.selId === id })}</div>`;
+  }).join('');
+  const bld = [st.house != null ? '<span>EV +3M</span>' : '', st.hotel != null ? '<span>OTEL +4M</span>' : ''].join('');
+  const sk = o.stackK != null ? ` data-k="${o.stackK}" role="button" tabindex="0"` : '';
+  return `<div class="stack ${done ? 'done' : ''} ${o.stackK != null ? 'pick' : ''}"${sk}>
+    <div class="pile" style="width:${w}px;height:${h + off * (st.cards.length - 1)}px">${cards}</div>
+    ${bld ? `<div class="bld">${bld}</div>` : ''}
+    <div class="lbl">${st.cards.length}/${COLORS[st.color].size}${o.noRent ? '' : ' · ' + rentOfStack(st) + 'M'}</div></div>`;
+}
+const stackValue = st => [...st.cards, st.house, st.hotel].filter(x => x != null).reduce((v, id) => v + C(id).v, 0);
+function tileHTML(st, seat, big) {
+  const w = big ? 66 : 46, vis = big ? 21 : 15, n = st.cards.length, col = COLORS[st.color], done = Engine.complete(st);
+  const cards = st.cards.map((id, i) => `<div class="slice" style="left:${i * vis}px;z-index:${i + 1}">${cardHTML(id, { size: big ? 'tl' : 'ts', color: st.color })}</div>`).join('');
+  const bld = (st.house != null ? '<span class="b">EV</span>' : '') + (st.hotel != null ? '<span class="b">OTEL</span>' : '');
+  const k = cb(() => openModal({ type: 'set', sid: st.sid, seat }));
+  return `<div class="tile ${done ? 'done' : ''}" style="--c:${col.hex}" data-k="${k}" role="button" tabindex="0" title="${col.n}: ayrıntı için tıkla">
+    <div class="fanrow" style="width:${w + vis * (n - 1)}px;height:${Math.round(w * 1.42)}px">${cards}</div>
+    <div class="tinfo"><span class="dot"></span><b>${n}/${col.size}</b>${bld}<span>kira ${rentOfStack(st)}M</span><span class="val">${stackValue(st)}M</span></div></div>`;
+}
+const propValue = p => p.stacks.reduce((v, st) => v + stackValue(st), 0);
+function rentOfStack(st) {
+  const real = st.cards.filter(id => !Engine.isRainbow(id)).length; if (!real) return 0;
+  const col = COLORS[st.color]; let r = col.rent[Math.min(st.cards.length, col.size) - 1];
+  if (Engine.complete(st)) { if (st.house != null) r += 3; if (st.hotel != null) r += 4; }
+  return r;
+}
+function trayHTML(p, big) {
+  const cnt = {}; p.bank.forEach(id => { const v = C(id).v; cnt[v] = (cnt[v] || 0) + 1; });
+  const slots = [1, 2, 3, 4, 5, 10].map(v => `<div class="slot${cnt[v] ? '' : ' empty'}" style="--m:${MONEY_TINT[v]};--d:${MONEY_INK[v]}" title="${v}M: ${cnt[v] || 0} adet"><b>${v}M</b><span>×${cnt[v] || 0}</span></div>`).join('');
+  return `<div class="tray${big ? ' big' : ''}"><div class="tlabel">Banka <b>${bankTotal(p)}M</b></div><div class="slots">${slots}</div></div>`;
+}
+function bankHTML(p, size) {
+  if (!p.bank.length) return '<span class="muted">boş</span>';
+  const groups = new Map();
+  p.bank.forEach(id => { const c = C(id); const key = c.k === 'money' ? 'm' + c.v : (c.k === 'act' ? 'a' + c.a : c.k + id); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(id); });
+  const arr = [...groups.values()].sort((x, y) => C(y[0]).v - C(x[0]).v);
+  const w = size === 'sm' ? 58 : 74, h = Math.round(w * 1.42);
+  return arr.map(ids => `<div class="bankpile" style="width:${w + (Math.min(ids.length, 4) - 1) * 5}px;height:${h + (Math.min(ids.length, 4) - 1) * 3}px" title="${ids.length} × ${C(ids[0]).v}M">
+    ${ids.slice(0, 4).map((id, i) => `<div style="position:absolute;left:${i * 5}px;top:${i * 3}px">${cardHTML(id, { size })}</div>`).join('')}
+    ${ids.length > 1 ? `<span class="cnt">×${ids.length}</span>` : ''}${C(ids[0]).k !== 'money' ? `<span class="bv">${C(ids[0]).v}M para</span>` : ''}</div>`).join('');
+}
+const bankTotal = p => p.bank.reduce((x, id) => x + C(id).v, 0);
+
+// ---------- yardımcılar ----------
+const S = () => app.state;
+const me = () => S().players[app.mySeat];
+const myTurnFree = () => { const s = S(); return s && s.phase === 'play' && !s.pending && s.turn === app.mySeat; };
+const pname = i => esc(S().players[i].name);
+
+// ---------- ana render ----------
+function render() {
+  CB = [];
+  let html = '';
+  if (app.view === 'home') html = homeHTML();
+  else if (app.view === 'lobby') html = lobbyHTML();
+  else if (app.view === 'game') html = gameHTML();
+  html += modalHTML();
+  if (app._lastView !== app.view) { try { window.scrollTo(0, 0); } catch (e) {} app._lastView = app.view; }
+  $root.innerHTML = html;
+  const lb = $root.querySelector('.logbox'); if (lb) lb.scrollTop = 0;
+  if (app.view === 'game' && S()) {
+    const n = S().last ? S().last.n : 0;
+    if (app.lastShown >= 0 && n !== app.lastShown && S().last) showFly(S().last);
+    app.lastShown = n;
+    const b = S().bld ? S().bld.n : 0;
+    if (app.lastBld >= 0 && b !== app.lastBld && S().bld) showBld(S().bld);
+    app.lastBld = b;
+  }
+  const ni = document.getElementById('nameInput');
+  if (ni) ni.addEventListener('input', e => { app.name = e.target.value.slice(0, 16); lsSet('td_name', app.name); });
+  const ci = document.getElementById('codeInput');
+  if (ci) ci.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(ci.value); });
+}
+
+// ---------- ANA SAYFA ----------
+function homeHTML() {
+  const online = app.onlineStatus;
+  const disabled = online !== 'ready' || !app.canWrite ? 'disabled' : '';
+  const nameOk = () => (app.name || '').trim().length > 0;
+  const kNew = cb(() => { if (!nameOk()) return toast('Önce adını yaz.'); createGame(); });
+  const kJoin = cb(() => joinByCode(document.getElementById('codeInput').value));
+  const kBots = cb(() => { if (!nameOk()) { app.name = 'Ben'; } startLocal(); });
+  const kBc = cb(e => { if (e.target.dataset.n) { app.botCount = +e.target.dataset.n; render(); } });
+  let onlineMsg = '';
+  if (online === 'loading') onlineMsg = '<div class="muted">Online bağlantı kuruluyor…</div>';
+  else if (online === 'off') onlineMsg = window.NET_MODE === 'p2p' ? '<div class="notice">Bağlantı aracı yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile. Botlarla deneme yine de çalışır.</div>' : '<div class="notice">Online oyun bu görünümde çalışmıyor (giriş yapılmamış ya da sayfa sohbet önizlemesinde açık). Sayfayı claude.ai bağlantısından açınca online oynayabilirsin. Botlarla deneme her yerde çalışır.</div>';
+  else if (!app.canWrite) onlineMsg = '<div class="notice">Bu sayfada oyun kurma/katılma iznin yok. Sayfanın sahibi seni <b>Düzenleyici (Editor)</b> olarak davet etmeli.</div>';
+  const mine = app.myGames.filter(g => g.status !== 'over').slice(0, 8);
+  const lob = app.lobbies.filter(g => !(g.uids || []).includes(myUid)).slice(0, 8);
+  const gameItem = (g, label) => `<div class="item"><span><span class="code">${esc(g.code)}</span> <span class="muted">· ${esc((g.players || []).map(p => p.name).join(', '))}</span></span><button ${disabled} data-k="${cb(() => label === 'Katıl' ? joinByCode(g.code) : openGame(g.code))}">${label}</button></div>`;
+  return `<div class="home">
+    <div class="brand"><h1>TAPU TAKAS</h1><p>Monopoly Deal kurallarıyla arkadaşlarınla online kart oyunu. Seçilen sayıda tam set toplayan kazanır.</p></div>
+    <div class="row"><label for="nameInput" class="muted">Adın</label><input id="nameInput" maxlength="16" placeholder="Örn. Engin" value="${esc(app.name)}"></div>
+    <div class="grid2">
+      <div class="panel"><h2>Online oyna</h2>${onlineMsg}${app.prefillCode ? `<div class="notice"><b class="code">${esc(app.prefillCode)}</b> oyununa davet edildin. Adını yaz ve <b>Katıl</b>'a bas.</div>` : ''}
+        <button class="primary" ${disabled} data-k="${kNew}">Yeni oyun kur</button>
+        <div class="muted" style="font-size:13px">Kaç sette biteceğini lobide seçeceksin.</div>
+        <div class="row"><label for="codeInput" class="muted">Kod</label><input id="codeInput" maxlength="4" placeholder="ABCD" value="${esc(app.prefillCode || '')}" style="width:110px;text-transform:uppercase"><button ${disabled} data-k="${kJoin}">Katıl</button></div>
+        ${mine.length ? `<div class="list"><b>Oyunlarım</b>${mine.map(g => gameItem(g, g.status === 'lobby' ? 'Lobiye dön' : 'Devam et')).join('')}</div>` : ''}
+        ${lob.length ? `<div class="list"><b>Açık lobiler</b>${lob.map(g => gameItem(g, 'Katıl')).join('')}</div>` : (online === 'ready' ? (window.NET_MODE === 'p2p' ? '<div class="muted">Oyun kurunca çıkan bağlantıyı arkadaşlarına gönder; açıp adlarını yazarak katılırlar.</div>' : '<div class="muted">Şu an açık lobi yok. Bir oyun kur, arkadaşların burada görsün.</div>') : '')}
+      </div>
+      <div class="panel"><h2>Botlarla dene</h2>
+        <div class="muted">Çevrimdışı deneme masası. Kurallar online oyunla aynı.</div>
+        <div class="row" data-k="${kBc}">Bot sayısı: ${[1, 2, 3, 4].map(n => `<button data-n="${n}" class="${app.botCount === n ? 'primary' : 'ghost'}">${n}</button>`).join('')}</div>
+        ${targetPicker(app.target, n => { app.target = n; render(); })}
+        ${dupPicker(app.dupSets, v => { app.dupSets = v; render(); })}
+        <button class="primary" data-k="${kBots}">Botlarla başlat</button>
+      </div>
+    </div>
+    <div class="panel rules"><h2 style="color:var(--ink)">Kısa kurallar</h2><ul>
+      <li>Sıran gelince <b>2 kart</b> çekersin (elin boşsa 5). Sıra başına <b>en fazla 3 kart</b> oynarsın.</li>
+      <li>Kartı tıkla: <b>bankaya koy</b> (para olarak), <b>tapu olarak aç</b> ya da <b>aksiyon olarak oyna</b>.</li>
+      <li>Ödeme yaparken para üstü verilmez; banka ve masandaki kartlarla ödersin, elindekilerle değil.</li>
+      <li><b>Reddet</b> sana yapılan hamleyi iptal eder; karşı taraf da Reddet ile karşılık verebilir.</li>
+      <li>Sıra sonunda elinde en fazla <b>7 kart</b> kalır.</li>
+      <li><b>Ev kuralımız:</b> tam bir setten joker çıkarıp seti bozmak <b>1 hamle</b> sayılır. Henüz set olmamış bir gruptaki jokerin rengini sıran boyunca ücretsiz değiştirebilirsin.</li>
+      <li>Sadece Renkli Joker'den oluşan bir yığın için kira istenemez. Setten kart çıkınca aynı renkte boşta duran tapun otomatik sete geçer. Set yine de bozulursa ev ve otel bankana <b>para olarak</b> geçer.</li>
+    </ul></div>
+  </div>`;
+}
+
+function targetPicker(cur, fn, dis = false) {
+  const k = cb(e => { if (e.target.dataset.t && !dis) fn(+e.target.dataset.t); });
+  return `<div class="row" data-k="${k}">Kaç sette bitsin: ${[2, 3, 4, 5].map(n => `<button ${dis ? 'disabled' : ''} data-t="${n}" class="${cur === n ? 'primary' : 'ghost'}">${n} set</button>`).join('')}</div>`;
+}
+
+function dupPicker(cur, fn, dis = false) {
+  const k = cb(e => { if (e.target.dataset.d && !dis) fn(e.target.dataset.d === '1'); });
+  return `<div class="row" data-k="${k}">Aynı renkten 2. set: <button ${dis ? 'disabled' : ''} data-d="1" class="${cur ? 'primary' : 'ghost'}">Sayılır</button><button ${dis ? 'disabled' : ''} data-d="0" class="${!cur ? 'primary' : 'ghost'}">Sayılmaz (resmi)</button></div>`;
+}
+
+// ---------- LOBİ ----------
+function lobbyHTML() {
+  const g = app.game;
+  if (!g) return `<div class="lobby"><h2>Yükleniyor…</h2><button data-k="${cb(goHome)}">Ana sayfa</button></div>`;
+  const inGame = g.players.some(p => p.uid === myUid);
+  const host = app.isHost;
+  const rows = g.players.map((p, i) => `<div class="item"><span>${esc(p.name)} ${p.uid === g.host ? '<span class="pill gold">Kurucu</span>' : ''} ${p.bot ? '<span class="pill bot">BOT</span>' : ''} ${p.uid === myUid ? '<span class="pill">sen</span>' : ''}</span>
+    ${host && p.uid !== myUid ? `<button class="ghost" data-k="${cb(() => hostRemove(i))}">Çıkar</button>` : ''}</div>`).join('');
+  return `<div class="lobby">
+    <div class="row"><button class="ghost" data-k="${cb(goHome)}">← Ana sayfa</button></div>
+    <div class="panel"><div class="muted">Oyun kodu</div><div class="bigcode">${esc(g.code)}</div>
+      ${window.NET_MODE === 'p2p' ? netShareHTML(g.code) : '<div class="muted">Arkadaşların bu sayfayı açıp kodu yazsın ya da "Açık lobiler" listesinden katılsın.</div>'}</div>
+    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'}</div>`}</div>
+    <div class="panel"><h2>Oyuncular (${g.players.length}/5)</h2><div class="list">${rows}</div>
+      ${!inGame ? '<div class="muted">Katılma isteğin gönderildi, kurucunun sayfası açıkken birkaç saniyede listeye eklenirsin…</div>' : ''}
+      ${host ? `<div class="row"><button ${g.players.length >= 5 ? 'disabled' : ''} data-k="${cb(hostAddBot)}">+ Bot ekle</button>
+        <button class="primary" ${g.players.length < 2 ? 'disabled' : ''} data-k="${cb(hostStart)}">Oyunu başlat</button></div>
+        <div class="muted">Oyun boyunca senin sayfanın açık kalması gerekir: hamleleri senin tarayıcın işler.</div>`
+        : '<div class="muted">Kurucunun oyunu başlatması bekleniyor.</div>'}
+    </div></div>`;
+}
+
+// ---------- OYUN ----------
+function gameHTML() {
+  const s = S();
+  if (!s) return `<div class="lobby"><h2>Yükleniyor…</h2></div>`;
+  const n = s.players.length, my = app.mySeat;
+  const spectator = my < 0;
+  const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
+  const tp = s.players[s.turn];
+  const dots = [0, 1, 2].map(i => `<i class="${i < s.playsLeft ? 'on' : ''}"></i>`).join('');
+  const kEnd = cb(() => send({ t: 'end' }));
+  const top = `<div class="topbar">
+    <button class="ghost" data-k="${cb(goHome)}">← Çık</button>
+    <span class="turn">Sıra: ${esc(tp.name)}${s.turn === my ? ' (sen)' : ''}</span>
+    <span>Hamle <span class="dots">${dots}</span></span>
+    <span class="pill">Deste ${s.deck.length}</span><span class="pill">Tur ${s.turnNo}</span>
+    ${app.local ? '<span class="pill bot">Bot masası</span>' : `<span class="pill codepill">Kod <span class="code">${esc(app.code)}</span></span>`}
+    ${app.netStatus === 'down' ? '<span class="pill codepill" style="background:#b5382b">Bağlantı koptu, yeniden bağlanıyor…</span>' : ''}
+    <span class="spacer"></span>
+    <button data-k="${cb(() => openModal({ type: 'log' }))}" class="ghost">Kayıt</button>
+    <button data-k="${cb(() => openModal({ type: 'rules' }))}" class="ghost">Kurallar</button>
+    ${myTurnFree() ? `<button class="primary" data-k="${kEnd}">Sırayı bitir</button>` : ''}
+  </div>`;
+  const opps = `<div class="seats n${order.length}">${order.map(i => oppHTML(i)).join('')}</div>`;
+  let mineHtml = '';
+  if (!spectator) {
+    const p = me();
+    const canMove = myTurnFree();
+    const stacks = p.stacks.map(st => tileHTML(st, app.mySeat, true)).join('') || '<span class="muted">Henüz tapu açmadın.</span>';
+    const bank = trayHTML(p, true);
+    mineHtml = `<div class="seat me ${s.turn === my ? 'active' : ''}">
+      <div class="head"><span class="av me">${esc((p.name || '?')[0].toUpperCase())}</span><b>Sen</b><span class="pill gold">Set ${Engine.countSets(p, s)}/${s.target || 3}</span><span class="pill">Tapular ${propValue(p)}M</span>${canMove && p.stacks.some(st => st.cards.some(id => C(id).k === 'wild')) ? '<span class="muted hint-move">Jokerin rengini değiştirmek için gruba dokun.</span>' : ''}</div>
+      ${bank}
+      <div class="stacks">${stacks}</div></div>`;
+  }
+  const status = statusHTML();
+  const top1 = s.discard.length ? s.discard[s.discard.length - 1] : null;
+  const L = s.last;
+  const center = `<div class="center">
+    <div class="pilebox"><div class="deckpile">${Array.from({ length: Math.min(4, Math.ceil(s.deck.length / 12)) }, (_, i) => `<div style="position:absolute;top:${-i * 2}px;left:${i * 2}px">${backHTML('md')}</div>`).join('')}</div>Deste · ${s.deck.length}</div>
+    <div class="pilebox"><div class="discpile">${top1 != null ? cardHTML(top1, { size: 'md' }) : '<span class="muted">boş</span>'}</div>Yer</div>
+    <div class="lastplay">${L ? `<div class="muted" style="font-size:11px">SON HAMLE</div>${lastText(L)}` : '<span class="muted">Henüz kart oynanmadı.</span>'}</div></div>`;
+  const log = `<div class="logbox" aria-live="polite">${status}${s.log.slice().reverse().slice(0, 30).map(l => `<div>${esc(l)}</div>`).join('')}</div>`;
+  let handHtml = '';
+  if (!spectator) {
+    const p = me();
+    const free = myTurnFree() && s.playsLeft > 0;
+    handHtml = `<div class="handbar"><div class="row"><b>Elin (${p.hand.length})</b><span class="muted" style="font-size:13px">${free ? 'Oynamak istediğin karta tıkla.' : (s.turn === my && s.phase === 'discard' ? 'Fazla kartları atman gerekiyor.' : 'Kartlara bakabilirsin; sıra sende değil.')}</span></div>
+      <div class="hand arc">${p.hand.map((id, i) => { const n = p.hand.length, off = i - (n - 1) / 2, step = Math.min(5, 36 / Math.max(n, 1));
+        return `<div class="hs" style="--r:${(off * step).toFixed(1)}deg;--y:${(Math.abs(off) * Math.abs(off) * (n > 8 ? 1.2 : 2.2)).toFixed(1)}px;margin-left:${i ? handGap(n) : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`; }).join('')}</div></div>`;
+  }
+  return `<div class="game rt">${top}
+    <div class="table"><div class="oval" aria-hidden="true"></div>
+      
+      ${opps}
+      <div class="pot">${center}${status}</div>
+      ${mineHtml}
+    </div>${handHtml}</div>`;
+}
+
+function lastText(L) {
+  const s = S(); const who = `<b>${pname(L.seat)}</b>`; const c = C(L.card);
+  const nm = c.k === 'act' ? Engine.ACTS[c.a].name : c.k === 'rent' ? (c.colors === 'any' ? 'Joker Kira' : 'Kira') : c.k === 'money' ? c.v + 'M' : c.name;
+  switch (L.kind) {
+    case 'bank': return `${who} bankaya koydu: ${esc(nm)}`;
+    case 'prop': return `${who} tapu açtı: ${esc(c.k === 'prop' ? c.name : 'Joker → ' + COLORS[L.color].n)}`;
+    case 'move': return `${who} jokeri ${COLORS[L.color].n} rengine taşıdı`;
+    case 'rent': return `${who} ${COLORS[L.color].n} için ${L.amount}M kira istedi${L.doubles ? ' (x' + Math.pow(2, L.doubles) + ')' : ''}`;
+    case 'jsn': return `${who}: Reddet!`;
+    default: return `${who} oynadı: ${esc(nm)}`;
+  }
+}
+
+function showBld(B) {
+  const el = document.createElement('div'); el.className = 'flyin bldfly';
+  el.style.setProperty('--dy', B.seat === app.mySeat ? '320px' : '-320px'); el.style.setProperty('--rot', '0deg');
+  const total = B.cards.reduce((x, id) => x + C(id).v, 0);
+  el.innerHTML = `<div class="row" style="flex-wrap:nowrap">${B.cards.map(id => cardHTML(id)).join('')}</div><div class="cap">${esc(S().players[B.seat].name)}: set bozuldu, ${B.cards.length > 1 ? 'ev ve otel' : (C(B.cards[0]).a === 'house' ? 'ev' : 'otel')} bankaya para olarak geçti (+${total}M)</div>`;
+  setTimeout(() => { document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }, 900);
+}
+
+function showFly(L) {
+  const s = S(); if (!L) return;
+  const el = document.createElement('div'); el.className = 'flyin';
+  const mine = L.seat === app.mySeat;
+  el.style.setProperty('--dy', mine ? '320px' : '-320px');
+  el.style.setProperty('--rot', mine ? '8deg' : '-10deg');
+  el.innerHTML = cardHTML(L.card, { color: L.kind === 'prop' || L.kind === 'move' ? L.color : null }) + `<div class="cap">${lastText(L).replace(/<\/?b>/g, '')}</div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2050);
+}
+
+function handGap(n) {
+  const land = false, mob = window.innerWidth < 720 || window.innerHeight < 520;
+  const cw = land ? 58 : (mob ? 78 : 100), avail = Math.min(window.innerWidth, 1500) - (land ? 30 : (mob ? 40 : 70));
+  if (n <= 1) return 0;
+  return Math.round(Math.max(-cw * 0.7, Math.min(8, (avail - cw * n) / (n - 1))));
+}
+let rzT = null;
+window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (app.view === 'game') render(); }, 150); });
+
+function miniTrayHTML(p) {
+  const cnt = {}; p.bank.forEach(id => { const v = C(id).v; cnt[v] = (cnt[v] || 0) + 1; });
+  return `<div class="minitray">${[1, 2, 3, 4, 5, 10].map(v => `<span class="${cnt[v] ? '' : 'z'}" style="--m:${MONEY_TINT[v]};--d:${MONEY_INK[v]}">${v}·${cnt[v] || 0}</span>`).join('')}</div>`;
+}
+function barsHTML(p) {
+  if (!p.stacks.length) return '<span class="muted" style="font-size:11px">Tapu yok</span>';
+  return `<div class="bars">${p.stacks.map(st => { const sz = COLORS[st.color].size, n = st.cards.length;
+    return `<i class="${n >= sz ? 'done' : ''}" style="--c:${COLORS[st.color].hex}" title="${COLORS[st.color].n} ${n}/${sz}"><b style="height:${Math.round(100 * Math.min(n, sz) / sz)}%"></b></i>`; }).join('')}</div>`;
+}
+function oppHTML(i) {
+  const s = S(), p = s.players[i];
+  const open = app.ui.openOpps && app.ui.openOpps.has(i);
+  const stacks = p.stacks.map(st => tileHTML(st, i, false)).join('') || '<span class="muted" style="font-size:12px">Tapu yok</span>';
+  const kT = cb(() => { if (!app.ui.openOpps) app.ui.openOpps = new Set(); app.ui.openOpps.has(i) ? app.ui.openOpps.delete(i) : app.ui.openOpps.add(i); render(); });
+  return `<div class="seat opp ${s.turn === i ? 'active' : ''} ${open ? 'open' : ''}">
+    <button class="osum" type="button" data-k="${kT}" aria-expanded="${open}">
+      <span class="av">${esc((p.name || '?')[0].toUpperCase())}</span>
+      <span class="oc"><span class="l1"><b>${esc(p.name)}</b><span class="pill gold">Set ${Engine.countSets(p, s)}/${s.target || 3}</span><span class="muted">El ${p.hand.length} · ${bankTotal(p)}M</span><span class="chev">${open ? '▴' : '▾'}</span></span>
+      <span class="l2">${miniTrayHTML(p)}${barsHTML(p)}</span></span>
+    </button>
+    <div class="odet">
+    <div class="head"><span class="av">${esc((p.name || '?')[0].toUpperCase())}</span><span class="name">${esc(p.name)}</span>${p.bot ? '<span class="pill bot">BOT</span>' : ''}
+    <span class="pill gold">Set ${Engine.countSets(p, s)}/${s.target || 3}</span><span class="pill pv">Tapular ${propValue(p)}M</span>
+    <span class="fan" title="Elinde ${p.hand.length} kart">${Array.from({ length: Math.min(p.hand.length, 8) }, () => backHTML('xs')).join('')}</span><span class="pill hc">El ${p.hand.length}</span></div>
+    ${trayHTML(p, false)}
+    <div class="stacks">${stacks}</div></div></div>`;
+}
+
+function describePending(s) {
+  const pd = s.pending; if (!pd) return '';
+  const a = pname(pd.actor), t = pname(pd.cur);
+  const what = {
+    rent: `${a}, ${t} adlı oyuncudan ${pd.amount}M kira istiyor (${COLORS[pd.color]?.n || ''})`,
+    debt: `${a}, ${t} adlı oyuncudan 5M tahsilat yapıyor`,
+    birthday: `${a}'in doğum günü: ${t} 2M hediye ödeyecek`,
+    sly: `${a}, ${t} adlı oyuncunun tapusunu almak istiyor (Tapu Devri)`,
+    forced: `${a}, ${t} ile tapu takası yapmak istiyor (Değiş Tokuş)`,
+    dealbreaker: `${a}, ${t} adlı oyuncunun TAM SETİNİ almak istiyor (Haciz)`,
+  }[pd.act] || '';
+  return what;
+}
+
+function statusHTML() {
+  const s = S();
+  if (s.phase === 'over') return `<div class="status">🏆 ${pname(s.winner)} kazandı!</div>`;
+  const w = Engine.whoActs(s);
+  if (s.pending) {
+    const d = describePending(s);
+    const resp = Engine.respondent(s);
+    const extra = s.pending.stage === 'actor' ? ` · ${pname(s.pending.cur)} reddetti, ${pname(resp)} karar veriyor` : '';
+    return `<div class="status ${resp === app.mySeat ? '' : 'wait'}">${d}${extra}${resp === app.mySeat ? ' · Yanıt sende!' : ' · yanıt bekleniyor…'}</div>`;
+  }
+  if (s.phase === 'discard') return `<div class="status ${w === app.mySeat ? '' : 'wait'}">${pname(s.turn)} fazla kartlarını atıyor…</div>`;
+  if (w === app.mySeat) return s.playsLeft > 0 ? `<div class="status">Sıra sende: ${s.playsLeft} hamle hakkın var.</div>` : `<div class="status">Hamle hakkın bitti. Joker tapularını düzenleyip "Sırayı bitir"e bas.</div>`;
+  return `<div class="status wait">${pname(w)} oynuyor…</div>`;
+}
+
+// ---------- PENCERELER ----------
+function openModal(m) { app.ui.modal = m; app.ui.sel = new Set(); render(); }
+function closeModal() { app.ui.modal = null; app.ui.sel = new Set(); render(); }
+
+function autoModal() {
+  // yanıt / kart atma / oyun sonu pencereleri durumdan otomatik açılır
+  const s = S(); if (app.view !== 'game' || !s) return null;
+  if (s.phase === 'over') return { type: 'over', closable: false };
+  if (app.mySeat < 0) return null;
+  if (s.pending && Engine.respondent(s) === app.mySeat) return { type: 'respond', closable: false };
+  if (s.phase === 'discard' && s.turn === app.mySeat) return { type: 'discard', closable: false };
+  return null;
+}
+
+function modalHTML() {
+  if (app.view === 'game' && !app.local && !app.isHost && app.waitV != null && S() && app.waitV === S().v)
+    return '<div class="veil"><div class="modal"><h3>Hamle gönderildi…</h3><div class="muted">Kurucunun tarayıcısı işliyor.</div></div></div>';
+  const auto = autoModal();
+  let m = app.ui.modal;
+  if (auto) {
+    if (!m || m.type !== auto.type || m.key !== stateKey()) { app.ui.modal = m = { ...auto, key: stateKey() }; app.ui.sel = new Set(); }
+  } else if (m && ['respond', 'discard', 'over'].includes(m.type)) { app.ui.modal = m = null; }
+  if (!m) return '';
+  let body = '';
+  try { body = renderModal(m); } catch (e) { console.error(e); body = '<h3>Bir hata oluştu</h3>'; }
+  if (body == null) { app.ui.modal = null; return ''; }
+  const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
+  return `<div class="veil" data-k="${kClose}"><div class="modal" role="dialog" aria-modal="true">${body}</div></div>`;
+}
+const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
+
+function optBtn(label, sub, fn, cls = '', dis = false) {
+  return `<button class="${cls}" ${dis ? 'disabled' : ''} data-k="${cb(fn)}"><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</button>`;
+}
+const cancelBtn = () => `<div class="row"><button class="ghost" data-k="${cb(closeModal)}">Vazgeç</button></div>`;
+const playThen = a => () => { app.ui.modal = null; send(a); };
+
+function renderModal(m) {
+  const s = S();
+  if (m.type === 'rules') return `<h3>Kurallar</h3>${homeRules()}<div class="row"><button class="primary" data-k="${cb(closeModal)}">Tamam</button></div>`;
+  if (m.type === 'over') {
+    const kAgain = cb(() => { app.ui.modal = null; app.local ? startLocal() : hostRestart(); });
+    return `<div class="win">🏆 ${pname(s.winner)} kazandı!</div><div class="muted" style="text-align:center">${s.turnNo}. turda ${s.target || 3} tam set tamamlandı.</div>
+      <div class="row" style="justify-content:center">${app.local || app.isHost ? `<button class="primary" data-k="${kAgain}">Yeniden oyna</button>` : ''}<button data-k="${cb(() => { app.ui.modal = null; goHome(); })}">Ana sayfa</button></div>`;
+  }
+  if (m.type === 'respond') return respondModal();
+  if (m.type === 'discard') return discardModal();
+  if (m.type === 'move') return moveModal(m);
+  if (m.type === 'set') return setModal(m);
+  if (m.type === 'log') return `<h3>Oyun kaydı</h3><div class="logbox" style="max-height:60vh">${s.log.slice().reverse().map(l => `<div>${esc(l)}</div>`).join('')}</div><div class="row"><button class="primary" data-k="${cb(closeModal)}">Kapat</button></div>`;
+  if (m.type === 'card') return cardModal(m);
+  return null;
+}
+
+function homeRules() {
+  return `<ul class="rules">
+    <li><b>Kazanmak:</b> seçilen sayıda (varsayılan 3) tam set. Ev kuralı: aynı renkten ikinci bir tam set de sayılır (lobide resmi kurala çevrilebilir).</li>
+    <li><b>Sıra:</b> 2 kart çek (el boşsa 5), en fazla 3 kart oyna, sonunda en fazla 7 kart tut.</li>
+    <li><b>Para/Aksiyon:</b> aksiyon kartlarını para olarak bankaya koyabilirsin; tapular bankaya konamaz.</li>
+    <li><b>Ödeme:</b> banka ve masandan; para üstü yok. Yetmiyorsa her şeyini verirsin.</li>
+    <li><b>Kira:</b> iki renkli kira herkesten, Joker Kira tek rakipten. İkiye Katla kira kartıyla birlikte oynanır ve ayrıca 1 hamle sayılır.</li>
+    <li><b>Tapu Devri / Değiş Tokuş</b> tam setlerden kart alamaz. <b>Haciz</b> tam seti ev/otel ile birlikte alır.</li>
+    <li><b>Ev</b> tam sete (+3M), <b>Otel</b> evli tam sete (+4M); İstasyon ve İdare'ye konmaz. Set bozulursa ev/otel bankana para olarak geçer.</li>
+    <li><b>Ev kuralı:</b> tam seti bozmak 1 hamle; set olmamış gruptaki jokeri taşımak ücretsiz.</li></ul>`;
+}
+
+function targetButtons(fn, filter = () => true) {
+  const s = S();
+  return `<div class="opts">${s.players.map((p, i) => i === app.mySeat || !filter(i) ? '' :
+    optBtn(esc(p.name), `Banka ${bankTotal(p)}M · masa ${Engine.assetTotal(p) - bankTotal(p)}M`, () => fn(i))).join('')}</div>`;
+}
+
+function cardModal(m) {
+  const s = S(), p = me(), id = m.id, c = C(id);
+  const free = myTurnFree() && s.playsLeft > 0;
+  const head = `<div class="row" style="align-items:flex-start;flex-wrap:nowrap">${cardHTML(id)}<div class="col"><h3>${esc(c.k === 'act' ? Engine.ACTS[c.a].name : c.k === 'rent' ? (c.colors === 'any' ? 'Joker Kira' : 'Kira') : c.name)}</h3>
+    <div class="muted">${c.k === 'act' ? Engine.ACTS[c.a].d : c.k === 'money' ? 'Para kartı.' : c.k === 'rent' ? 'Kira hamle kartı.' : c.k === 'wild' ? 'Joker tapu senedi.' : 'Tapu senedi.'}${c.v ? ` Değeri ${c.v}M.` : ''}</div>
+    ${!free ? '<div class="notice">Şu an bu kartı oynayamazsın' + (s.playsLeft <= 0 && s.turn === app.mySeat ? ' (hamle hakkın bitti).' : ' (sıra sende değil).') + '</div>' : ''}</div></div>`;
+  if (!free) return head + cancelBtn();
+  const step = m.step || 'main';
+  const bankOpt = (c.k !== 'prop' && c.k !== 'wild') ? optBtn('Bankaya koy', `+${c.v}M para olarak`, playThen({ t: 'bank', card: id }), c.k === 'money' ? 'primary' : '') : '';
+  const go = patch => () => openModalKeep({ ...m, ...patch });
+
+  if (c.k === 'money') return head + `<div class="opts">${bankOpt}</div>` + cancelBtn();
+  if (c.k === 'prop') return head + `<div class="opts">${optBtn('Tapu olarak aç', COLORS[c.color].n + ' setine', playThen({ t: 'prop', card: id }), 'primary')}</div>` + cancelBtn();
+  if (c.k === 'wild') {
+    const cols = c.colors === 'any' ? Engine.CK : c.colors;
+    return head + `<div class="muted">Hangi renk olarak açılsın? Set olmadığı sürece rengini sonra ücretsiz değiştirebilirsin; tam seti bozmak 1 hamle.</div><div class="opts">${cols.map(col => optBtn(`<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${COLORS[col].hex};margin-right:8px;vertical-align:-1px"></span>Aç: ${COLORS[col].n}`, colorProgress(p, col), playThen({ t: 'prop', card: id, color: col }), '', false)).join('')}</div>` + cancelBtn();
+  }
+  if (c.k === 'rent') {
+    const cols = (c.colors === 'any' ? Engine.CK : c.colors).filter(col => Engine.rentFor(p, col) > 0);
+    const dbl = p.hand.filter(x => Engine.isAct(x, 'double'));
+    if (step === 'main') {
+      return head + `<div class="opts">${cols.length ? cols.map(col => optBtn(`Kira iste: ${COLORS[col].n}`, `${Engine.rentFor(p, col)}M ${c.colors === 'any' ? '· tek rakipten' : '· herkesten'}`, go({ step: 'dbl', color: col }), 'primary')).join('')
+        : '<div class="notice">Bu kartın renklerinde kira alabileceğin tapun yok.</div>'}${bankOpt}</div>` + cancelBtn();
+    }
+    const base = Engine.rentFor(p, m.color);
+    const maxD = Math.min(dbl.length, s.playsLeft - 1);
+    if (step === 'dbl') {
+      if (maxD <= 0) return renderModal({ ...m, step: 'target', doubles: [] });
+      const opts = Array.from({ length: maxD + 1 }, (_, k) => optBtn(k === 0 ? 'Normal kira' : `${k} × İkiye Katla ekle`, `${base * Math.pow(2, k)}M · ${k + 1} hamle`, go({ step: 'target', doubles: dbl.slice(0, k) }), k ? 'primary' : '')).join('');
+      return head + `<h3>Kirayı katlamak ister misin?</h3><div class="opts">${opts}</div>` + cancelBtn();
+    }
+    const doubles = m.doubles || [];
+    if (c.colors !== 'any') {
+      const amt = base * Math.pow(2, doubles.length);
+      return head + `<div class="opts">${optBtn(`Herkesten ${amt}M kira iste`, COLORS[m.color].n, playThen({ t: 'play', card: id, color: m.color, doubles }), 'primary')}</div>` + cancelBtn();
+    }
+    return head + `<h3>Kimden ${base * Math.pow(2, doubles.length)}M kira isteyeceksin?</h3>` + targetButtons(t => { app.ui.modal = null; send({ t: 'play', card: id, color: m.color, doubles, target: t }); }) + cancelBtn();
+  }
+  // aksiyonlar
+  switch (c.a) {
+    case 'passgo': return head + `<div class="opts">${optBtn('Oyna: 2 kart çek', '1 hamle', playThen({ t: 'play', card: id }), 'primary')}${bankOpt}</div>` + cancelBtn();
+    case 'birthday': return head + `<div class="opts">${optBtn('Oyna: herkes 2M öder', '', playThen({ t: 'play', card: id }), 'primary')}${bankOpt}</div>` + cancelBtn();
+    case 'debt':
+      if (step === 'target') return head + '<h3>Kimden 5M alacaksın?</h3>' + targetButtons(t => { app.ui.modal = null; send({ t: 'play', card: id, target: t }); }) + cancelBtn();
+      return head + `<div class="opts">${optBtn('Oyna: rakip seç', '5M tahsil et', go({ step: 'target' }), 'primary')}${bankOpt}</div>` + cancelBtn();
+    case 'house': case 'hotel': {
+      const ok = p.stacks.filter(st => Engine.complete(st) && st.color !== 'rail' && st.color !== 'util' && (c.a === 'house' ? st.house == null : (st.house != null && st.hotel == null)));
+      return head + `<div class="opts">${ok.map(st => optBtn(`${c.a === 'house' ? 'Ev' : 'Otel'} koy: ${COLORS[st.color].n}`, `kira ${rentOfStack(st)}M → ${rentOfStack(st) + (c.a === 'house' ? 3 : 4)}M`, playThen({ t: 'play', card: id, sid: st.sid }), 'primary')).join('')
+        || `<div class="notice">${c.a === 'house' ? 'Ev için tamamlanmış bir set lazım.' : 'Otel için evli tamamlanmış bir set lazım.'}</div>`}${bankOpt}</div>` + cancelBtn();
+    }
+    case 'jsn': return head + `<div class="notice">Reddet kartı, biri sana hamle yaptığında otomatik olarak sorulur. Şimdi sadece bankaya koyabilirsin.</div><div class="opts">${bankOpt}</div>` + cancelBtn();
+    case 'double': return head + `<div class="notice">Bir Kira kartına tıkladığında katlama seçeneği çıkar.</div><div class="opts">${bankOpt}</div>` + cancelBtn();
+    case 'sly': case 'forced': {
+      if (step === 'main') {
+        const anyTake = s.players.some((q, i) => i !== app.mySeat && q.stacks.some(st => !Engine.complete(st)));
+        const anyGive = c.a !== 'forced' || p.stacks.some(st => !Engine.complete(st));
+        return head + `<div class="opts">${anyTake && anyGive ? optBtn(c.a === 'sly' ? 'Oyna: alacağın tapu senedini seç' : 'Oyna: takas edilecek tapu senetlerini seç', '', go({ step: 'take' }), 'primary')
+          : `<div class="notice">${!anyTake ? 'Rakiplerin tamamlanmamış setlerinde alınabilecek tapu yok.' : 'Takas için tamamlanmamış bir setinde tapu olmalı.'}</div>`}${bankOpt}</div>` + cancelBtn();
+      }
+      if (step === 'take') {
+        const groups = s.players.map((q, i) => {
+          if (i === app.mySeat) return '';
+          const sts = q.stacks.filter(st => !Engine.complete(st));
+          if (!sts.length) return '';
+          return `<div class="who"><b>${esc(q.name)}</b><div class="stacks">${sts.map(st => stackHTML(st, 'md', { cardK: x => cb(() => {
+            if (c.a === 'sly') { app.ui.modal = null; send({ t: 'play', card: id, target: i, take: x }); }
+            else openModalKeep({ ...m, step: 'give', target: i, take: x });
+          }) })).join('')}</div></div>`;
+        }).join('');
+        return `<h3>${c.a === 'sly' ? 'Hangi tapuyu alacaksın?' : 'Rakipten hangi tapuyu alacaksın?'}</h3><div class="muted">Bir karta tıkla. Tam setlerden alınamaz.</div>${groups}` + cancelBtn();
+      }
+      if (step === 'give') {
+        const sts = p.stacks.filter(st => !Engine.complete(st));
+        return `<h3>Karşılığında hangi tapunu vereceksin?</h3><div class="row">Alınacak: ${cardHTML(m.take, { size: 'md', color: Engine.colorOnTable(s.players[m.target], m.take) })}</div>
+          <div class="stacks">${sts.map(st => stackHTML(st, 'md', { cardK: x => cb(() => { app.ui.modal = null; send({ t: 'play', card: id, target: m.target, take: m.take, give: x }); }) })).join('')}</div>` + cancelBtn();
+      }
+      break;
+    }
+    case 'dealbreaker': {
+      const any = s.players.some((q, i) => i !== app.mySeat && q.stacks.some(Engine.complete));
+      if (step === 'main') return head + `<div class="opts">${any ? optBtn('Oyna: alınacak seti seç', '', go({ step: 'set' }), 'primary') : '<div class="notice">Rakiplerin hiç tam seti yok.</div>'}${bankOpt}</div>` + cancelBtn();
+      const groups = s.players.map((q, i) => {
+        if (i === app.mySeat) return '';
+        const sts = q.stacks.filter(Engine.complete); if (!sts.length) return '';
+        return `<div class="who"><b>${esc(q.name)}</b><div class="stacks">${sts.map(st => stackHTML(st, 'md', { stackK: cb(() => { app.ui.modal = null; send({ t: 'play', card: id, target: i, sid: st.sid }); }) })).join('')}</div></div>`;
+      }).join('');
+      return `<h3>Hangi seti alacaksın?</h3><div class="muted">Sete tıkla.</div>${groups}` + cancelBtn();
+    }
+  }
+  return head + cancelBtn();
+}
+function openModalKeep(m) { app.ui.modal = m; render(); }
+function colorProgress(p, col) {
+  const best = p.stacks.filter(st => st.color === col).reduce((x, st) => Math.max(x, st.cards.length), 0);
+  return `masada ${best}/${COLORS[col].size}`;
+}
+
+function moveModal(m) {
+  const s = S(), p = me(), id = m.id, c = C(id);
+  const f = Engine.findOnTable(p, id); if (!f) return null;
+  const cur = f.st.color, cost = Engine.complete(f.st) ? 1 : 0;
+  const cols = (c.colors === 'any' ? Engine.CK : c.colors).filter(x => x !== cur);
+  return `<div class="row" style="align-items:flex-start;flex-wrap:nowrap">${cardHTML(id, { color: cur })}<div class="col"><h3>Joker tapuyu başka renge taşı</h3>
+    <div class="muted">Şu an <b>${COLORS[cur].n}</b> grubunda (${f.st.cards.length} kart).</div>
+    ${cost ? `<div class="notice">Ev kuralı: tam seti bozmak <b>1 hamle</b> harcar (kalan ${s.playsLeft}).${f.st.house != null || f.st.hotel != null ? ' Aynı renkte boşta tapun varsa otomatik sete geçer ve ev/otel yerinde kalır; yoksa ev/otel bankana para olarak geçer.' : ''}</div>` : '<div class="notice">Bu grup henüz set değil: jokeri taşımak <b>ücretsiz</b>.</div>'}</div></div>
+    <div class="opts">${cols.map(col => optBtn(`<span class="sw" style="background:${COLORS[col].hex}"></span>${COLORS[col].n}`, colorProgress(p, col), playThen({ t: 'move', card: id, color: col }), '', cost > s.playsLeft)).join('')}</div>` + cancelBtn();
+}
+
+function setModal(m) {
+  const s = S(), p = s.players[m.seat]; const st = p.stacks.find(x => x.sid === m.sid);
+  if (!st) return null;
+  const col = COLORS[st.color], mine = m.seat === app.mySeat, can = mine && myTurnFree();
+  const cost = Engine.complete(st) ? 1 : 0;
+  const cards = st.cards.map(id => `<div class="col" style="align-items:center;gap:6px">${cardHTML(id, { size: 'md', color: st.color })}
+    ${can && C(id).k === 'wild' ? `<button class="ghost" style="padding:6px 8px;font-size:12px" ${cost > s.playsLeft ? 'disabled' : ''} data-k="${cb(() => openModal({ type: 'move', id }))}">Rengini değiştir${cost ? ' (1 hamle)' : ''}</button>` : ''}</div>`).join('');
+  const blds = [st.house, st.hotel].filter(x => x != null).map(id => cardHTML(id, { size: 'md' })).join('');
+  return `<h3><span class="sw" style="background:${col.hex}"></span>${esc(p.name)} · ${col.n}</h3>
+    <div class="row"><span class="pill ${Engine.complete(st) ? 'gold' : ''}">${st.cards.length}/${col.size}${Engine.complete(st) ? ' · tam set' : ''}</span><span class="pill">Kira ${rentOfStack(st)}M</span><span class="pill">Para değeri ${stackValue(st)}M</span></div>
+    <div class="pickgrid">${cards}${blds}</div>
+    <div class="muted" style="font-size:13px">Kira tablosu: ${col.rent.map((r, i) => `${i + 1} kart ${r}M`).join(' · ')}${st.color !== 'rail' && st.color !== 'util' ? ' · ev +3M, otel +4M' : ''}</div>
+    <div class="row"><button class="primary" data-k="${cb(closeModal)}">Kapat</button></div>`;
+}
+
+function respondModal() {
+  const s = S(), pd = s.pending, p = me();
+  const jsn = p.hand.filter(id => Engine.isAct(id, 'jsn')).length;
+  const kJ = cb(() => send({ t: 'jsn' }));
+  const jsnBtn = jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet <small>(elinde ${jsn})</small></button>` : '';
+  if (pd.stage === 'actor') {
+    return `<h3>${pname(pd.cur)} hamleni reddetti</h3><div class="muted">${describePending(s)}. Sen de Reddet oynarsan hamlen geçerli olur.</div>
+      <div class="row">${jsnBtn}<button data-k="${cb(() => send({ t: 'accept' }))}">Kabul et (hamle iptal)</button></div>`;
+  }
+  const title = `<h3>${describePending(s)}</h3>`;
+  if (pd.kind === 'steal') {
+    let preview = '';
+    if (pd.act === 'dealbreaker') { const st = p.stacks.find(x => x.sid === pd.sid); preview = st ? stackHTML(st, 'md') : ''; }
+    else {
+      preview = `<div class="row"><span class="muted">Senden alınacak:</span>${cardHTML(pd.take, { size: 'md', color: Engine.colorOnTable(p, pd.take) })}`;
+      if (pd.act === 'forced') preview += `<span class="muted">Sana verilecek:</span>${cardHTML(pd.give, { size: 'md', color: Engine.colorOnTable(s.players[pd.actor], pd.give) })}`;
+      preview += '</div>';
+    }
+    return `${title}${preview}<div class="row">${jsnBtn}<button class="primary" data-k="${cb(() => send({ t: 'accept' }))}">Kabul et</button></div>`;
+  }
+  // ödeme
+  const sel = app.ui.sel;
+  const total = Engine.assetTotal(p);
+  const sum = [...sel].reduce((x, id) => x + C(id).v, 0);
+  const valid = sum >= pd.amount || sum >= total;
+  const toggle = id => cb(() => { sel.has(id) ? sel.delete(id) : sel.add(id); render(); });
+  const bank = p.bank.slice().sort((a, b) => C(a).v - C(b).v).map(id => cardHTML(id, { size: 'md', k: toggle(id), sel: sel.has(id) })).join('');
+  const table = p.stacks.map(st => {
+    const cards = st.cards.map(id => cardHTML(id, { size: 'md', color: st.color, k: C(id).v > 0 ? toggle(id) : null, sel: sel.has(id) })).join('');
+    const b = [st.house, st.hotel].filter(x => x != null).map(id => cardHTML(id, { size: 'md', k: toggle(id), sel: sel.has(id) })).join('');
+    return cards + b;
+  }).join('');
+  const kAuto = cb(() => { app.ui.sel = new Set(Bot.choosePayment(p, pd.amount)); render(); });
+  const kPay = cb(() => send({ t: 'pay', cards: [...sel] }));
+  return `${title}
+    <div class="row"><span class="pill gold">Borç ${pd.amount}M</span><span class="pill">Seçilen ${sum}M</span><span class="pill">Toplam varlığın ${total}M</span>${total < pd.amount ? '<span class="muted">Yetmiyor: her şeyini vermelisin.</span>' : ''}</div>
+    ${jsnBtn ? `<div class="row">${jsnBtn}<span class="muted">ya da ödeyeceğin kartları seç:</span></div>` : '<div class="muted">Ödeyeceğin kartları seç (para üstü verilmez):</div>'}
+    <div><b>Banka</b><div class="pickgrid">${bank || '<span class="muted">boş</span>'}</div></div>
+    <div><b>Masa</b><div class="pickgrid">${table || '<span class="muted">boş</span>'}</div></div>
+    <div class="row"><button data-k="${kAuto}">Otomatik seç</button><button class="primary" ${valid ? '' : 'disabled'} data-k="${kPay}">${sum ? `${sum}M öde` : 'Öde'}</button></div>`;
+}
+
+function discardModal() {
+  const p = me(), need = p.hand.length - 7, sel = app.ui.sel;
+  const cards = p.hand.map(id => cardHTML(id, { size: 'md', sel: sel.has(id), k: cb(() => { sel.has(id) ? sel.delete(id) : (sel.size < need && sel.add(id)); render(); }) })).join('');
+  return `<h3>Elinde ${p.hand.length} kart var: ${need} kart at</h3><div class="muted">Sıra sonunda elinde en fazla 7 kart kalabilir.</div>
+    <div class="pickgrid">${cards}</div><div class="row"><button class="primary" ${sel.size === need ? '' : 'disabled'} data-k="${cb(() => send({ t: 'discard', cards: [...sel] }))}">${sel.size}/${need} kartı at</button></div>`;
+}
+
+// ---------- HAMLE GÖNDERME ----------
+function send(a) {
+  const s = S(); if (!s) return;
+  if (app.local || app.isHost) {
+    const r = applyAuth(app.mySeat, a);
+    if (!r.ok) { toast(r.err); render(); }
+    return;
+  }
+  app.ui.modal = null;
+  sentAt = Date.now(); sentV = s.v; app.waitV = s.v; render();
+  setTimeout(() => { if (app.waitV === sentV) { app.waitV = null; render(); } }, 8000);
+  netSend(a);
+  setTimeout(() => { if (S() && S().v === sentV && Date.now() - sentAt >= 7900) toast('Hamle henüz işlenmedi. Kurucunun oyun sayfası açık olmalı.'); }, 8000);
+}
+
+function applyAuth(seat, a) {
+  const cur = app.local ? app.state : H.state;
+  const st = clone(cur);
+  const r = Engine.apply(st, seat, a);
+  if (!r.ok) return r;
+  if (app.local) app.state = st; else { H.state = st; app.state = st; writeGame({ state: st, status: st.phase === 'over' ? 'over' : 'playing' }); }
+  render(); scheduleBots();
+  return r;
+}
+
+function scheduleBots() {
+  if (botTimer) return;
+  const s = app.local ? app.state : H.state;
+  if (!s || (!app.local && !app.isHost)) return;
+  const w = Engine.whoActs(s);
+  if (w < 0 || !s.players[w].bot) return;
+  botTimer = setTimeout(() => {
+    botTimer = null;
+    const s2 = app.local ? app.state : H.state; if (!s2) return;
+    const w2 = Engine.whoActs(s2); if (w2 < 0 || !s2.players[w2].bot) return;
+    let r = applyAuth(w2, Bot.decide(s2, w2));
+    if (!r.ok) { r = applyAuth(w2, Bot.fallback(s2, w2)); if (!r.ok) console.warn('bot takıldı', r.err); }
+  }, 1200);
+}
+
+// ---------- ÇEVRİMDIŞI ----------
+function startLocal() {
+  stopOnline();
+  const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
+  const players = [{ uid: 'me', name: (app.name || 'Ben').trim(), bot: false }, ...names.slice(0, app.botCount).map((n, i) => ({ uid: 'bot' + i, name: n, bot: true }))];
+  app.local = true; app.isHost = false; app.code = null; app.game = null;
+  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
+  render(); scheduleBots();
+}
+
+
+let noticeN = 1;
+function handleRemote(uid, a) {
+  if (!a || !uid) return;
+  const g = app.game;
+  if (a.t === 'join') {
+    if (g.status !== 'lobby') return;
+    const players = H.players || g.players;
+    if (players.some(p => p.uid === uid) || players.length >= 5) return;
+    const name = String(a.name || 'Oyuncu').slice(0, 16);
+    H.players = [...players, { uid, name, bot: false }];
+    writeGame({ players: H.players, uids: H.players.filter(p => !p.bot).map(p => p.uid) });
+    return;
+  }
+  if (!H.state) return;
+  const seat = H.state.players.findIndex(p => p.uid === uid);
+  if (seat < 0) return;
+  const r = applyAuth(seat, a);
+  if (!r.ok) writeGame({ notice: { uid, msg: r.err, n: noticeN++ + Date.now() } });
+}
+
+function hostAddBot() {
+  const players = H.players || app.game.players;
+  if (players.length >= 5) return;
+  const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
+  const used = new Set(players.map(p => p.name));
+  const name = names.find(n => !used.has(n)) || 'Bot ' + players.length;
+  H.players = [...players, { uid: 'bot-' + Math.random().toString(36).slice(2, 8), name, bot: true }];
+  writeGame({ players: H.players });
+}
+function hostRemove(i) {
+  const players = (H.players || app.game.players).slice(); players.splice(i, 1);
+  H.players = players; writeGame({ players, uids: players.filter(p => !p.bot).map(p => p.uid) });
+}
+function hostStart() {
+  const players = H.players || app.game.players;
+  if (players.length < 2) return;
+  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false })); app.state = H.state;
+  writeGame({ status: 'playing', state: H.state });
+  app.view = 'game'; render(); scheduleBots();
+}
+function hostRestart() {
+  const players = (H.state ? H.state.players : app.game.players).map(p => ({ uid: p.uid, name: p.name, bot: p.bot }));
+  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false })); app.state = H.state;
+  writeGame({ status: 'playing', state: H.state }); render(); scheduleBots();
+}
+
+
+// ---------- ONLINE (eşler arası bağlantı: sunucusuz, kurucunun tarayıcısı hakem) ----------
+window.NET_MODE = 'p2p';
+const PEER_PREFIX = 'tapu-takas-v1-';
+const PEER_OPTS = window.PEER_OPTS || {};
+let peer = null, hostConns = new Map(), clientConn = null, reconnectT = null, firstGame = true;
+myUid = lsGet('td_uid'); if (!myUid) { myUid = 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); lsSet('td_uid', myUid); }
+
+const randCode = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPRSTUVYZ'[Math.floor(Math.random() * 21)]).join('');
+const shareLink = code => location.origin + location.pathname + '#' + code;
+
+function netShareHTML(code) {
+  const link = shareLink(code);
+  const kCopy = cb(async () => { try { await navigator.clipboard.writeText(link); toast('Bağlantı kopyalandı.'); } catch (e) { const i = document.getElementById('shareLink'); if (i) { i.select(); } toast('Kopyalanamadı; bağlantıyı seçip kopyala.'); } });
+  const wa = 'https://wa.me/?text=' + encodeURIComponent('Tapu Takas oynayalım! Bu bağlantıdan katıl: ' + link);
+  return `<div class="col" style="gap:8px">
+    <div class="muted">Bu bağlantıyı arkadaşlarına gönder. Açıp adlarını yazınca lobiye gelirler; Claude hesabı gerekmez.</div>
+    <input id="shareLink" readonly value="${esc(link)}" style="width:100%">
+    <div class="row"><button class="primary" data-k="${kCopy}">Bağlantıyı kopyala</button><a class="btnlink" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp'ta paylaş</a></div></div>`;
+}
+
+// ---- son oyunlar (bu tarayıcıda) ----
+function loadMyGames() { try { app.myGames = JSON.parse(lsGet('td_games') || '[]'); } catch (e) { app.myGames = []; } }
+function rememberGame(g) {
+  loadMyGames();
+  const item = { code: g.code, status: g.status, players: (g.players || []).map(p => ({ name: p.name })), updated: Date.now(), hosting: g.host === myUid };
+  app.myGames = [item, ...app.myGames.filter(x => x.code !== g.code)].slice(0, 6);
+  lsSet('td_games', JSON.stringify(app.myGames));
+}
+function saveHost() { if (!H.game) return; lsSet('td_host_' + H.game.code, JSON.stringify(H.game)); rememberGame(H.game); }
+function loadHost(code) { try { return JSON.parse(lsGet('td_host_' + code) || 'null'); } catch (e) { return null; } }
+
+function stopOnline() {
+  clearTimeout(reconnectT);
+  try { if (clientConn) clientConn.close(); } catch (e) {}
+  try { if (peer) peer.destroy(); } catch (e) {}
+  peer = null; clientConn = null; hostConns = new Map(); firstGame = true;
+  H = { state: null, ready: false, processed: new Set(), game: null, players: null };
+  app.netStatus = null;
+  if (botTimer) { clearTimeout(botTimer); botTimer = null; }
+}
+function goHome() {
+  stopOnline(); app.view = 'home'; app.local = false; app.state = null; app.game = null; app.code = null; app.ui.modal = null; app.prefillCode = null;
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  loadMyGames(); render();
+}
+
+function resetView(code) {
+  app.local = false; app.code = code; app.ui.modal = null; app.mySeat = -1; app.lastShown = -1; app.lastBld = -1; app.waitV = null;
+}
+
+// ---------------- KURUCU ----------------
+function createGame() {
+  const name = app.name.trim().slice(0, 16);
+  startHost({ code: randCode(), host: myUid, status: 'lobby', players: [{ uid: myUid, name, bot: false }], uids: [myUid],
+    target: app.target || 3, dupSets: app.dupSets !== false, state: null, notice: null, created: Date.now(), updated: Date.now() }, true, 0);
+}
+
+function startHost(game, fresh, tries) {
+  stopOnline(); resetView(game.code);
+  H.game = game; H.state = game.state ? clone(game.state) : null; H.players = clone(game.players); H.ready = true;
+  app.game = H.game; app.isHost = true; app.state = H.state;
+  app.mySeat = game.players.findIndex(p => p.uid === myUid);
+  app.view = game.status === 'lobby' ? 'lobby' : 'game'; app.netStatus = 'connecting';
+  render();
+  peer = new Peer(PEER_PREFIX + game.code, PEER_OPTS);
+  peer.on('open', () => {
+    app.netStatus = 'ok'; saveHost();
+    try { history.replaceState(null, '', '#' + game.code); } catch (e) {}
+    render(); scheduleBots();
+  });
+  peer.on('connection', conn => {
+    conn.on('data', msg => onHostData(conn, msg));
+    conn.on('close', () => { if (hostConns.get(conn.peer) === conn) hostConns.delete(conn.peer); });
+    conn.on('error', () => {});
+  });
+  peer.on('disconnected', () => { try { if (peer && !peer.destroyed) peer.reconnect(); } catch (e) {} });
+  peer.on('error', err => {
+    const t = err && err.type;
+    if (t === 'unavailable-id') {
+      if (fresh && tries < 5) { game.code = randCode(); return startHost(game, true, tries + 1); }
+      if (tries < 12) { app.netStatus = 'down'; render(); setTimeout(() => { if (app.code === game.code && app.isHost) startHost(game, false, tries + 1); }, 3000); return; }
+      toast('Bu oyun başka bir sekmede açık görünüyor.');
+      return;
+    }
+    if (t === 'peer-unavailable') return;
+    if (['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(t)) { app.netStatus = 'down'; render(); }
+  });
+}
+
+function onHostData(conn, msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.t === 'hello') {
+    conn.uid = String(msg.uid || '').slice(0, 40);
+    hostConns.set(conn.peer, conn);
+    if (H.game.status === 'lobby') handleRemote(conn.uid, { t: 'join', name: msg.name });
+    try { conn.send({ t: 'game', game: H.game }); } catch (e) {}
+    return;
+  }
+  if (msg.t === 'act' && conn.uid) handleRemote(conn.uid, msg.a);
+}
+
+function writeGame(patch) {
+  H.game = { ...H.game, ...patch, updated: Date.now() };
+  app.game = H.game;
+  saveHost();
+  hostConns.forEach(c => { try { if (c.open) c.send({ t: 'game', game: H.game }); } catch (e) {} });
+  render();
+}
+
+// ---------------- KATILAN ----------------
+function joinByCode(raw) {
+  const code = String(raw || '').trim().toUpperCase();
+  if (!/^[A-Z]{4}$/.test(code)) return toast('4 harfli oyun kodunu yaz.');
+  if (!app.name.trim()) return toast('Önce adını yaz.');
+  openGame(code);
+}
+function openGame(code) {
+  const saved = loadHost(code);
+  if (saved && saved.host === myUid) return startHost(saved, false, 0);
+  startClient(code);
+}
+
+function startClient(code) {
+  stopOnline(); resetView(code);
+  app.game = null; app.state = null; app.isHost = false; app.view = 'lobby'; app.netStatus = 'connecting';
+  render();
+  peer = new Peer(PEER_OPTS);
+  peer.on('open', () => connectHost());
+  peer.on('disconnected', () => { try { if (peer && !peer.destroyed) peer.reconnect(); } catch (e) {} });
+  peer.on('error', err => {
+    const t = err && err.type;
+    if (t === 'peer-unavailable') {
+      if (!app.game) { toast('Bu kodla açık bir oyun bulunamadı. Oyunu kuranın sayfası açık olmalı.'); goHome(); }
+      else { app.netStatus = 'down'; render(); scheduleReconnect(); }
+      return;
+    }
+    if (['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(t)) { app.netStatus = 'down'; render(); scheduleReconnect(); }
+  });
+}
+
+function connectHost() {
+  if (!peer || peer.destroyed) return;
+  const conn = peer.connect(PEER_PREFIX + app.code, { reliable: true });
+  clientConn = conn;
+  const t = setTimeout(() => { if (clientConn === conn && !conn.open) { try { conn.close(); } catch (e) {} if (app.game) scheduleReconnect(); else { toast('Oyuna bağlanılamadı. Kod doğru mu, kurucunun sayfası açık mı?'); goHome(); } } }, 12000);
+  conn.on('open', () => { clearTimeout(t); app.netStatus = 'ok'; conn.send({ t: 'hello', uid: myUid, name: app.name.trim().slice(0, 16) }); render(); });
+  conn.on('data', msg => { if (msg && msg.t === 'game') onGame(msg.game); });
+  conn.on('close', () => { if (clientConn === conn) { app.netStatus = 'down'; render(); scheduleReconnect(); } });
+  conn.on('error', () => {});
+}
+function scheduleReconnect() {
+  clearTimeout(reconnectT);
+  reconnectT = setTimeout(() => {
+    if (!peer || peer.destroyed || app.isHost || !app.code) return;
+    if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} }
+    connectHost();
+  }, 3000);
+}
+
+function onGame(g) {
+  if (!g || g.code !== app.code) return;
+  app.game = g;
+  app.mySeat = (g.players || []).findIndex(p => p.uid === myUid);
+  app.state = g.state;
+  if (g.notice && g.notice.uid === myUid && g.notice.n !== lastNoticeN) { if (!firstGame) { toast(g.notice.msg); app.waitV = null; } lastNoticeN = g.notice.n; }
+  firstGame = false;
+  app.view = g.status === 'lobby' ? 'lobby' : 'game';
+  rememberGame(g);
+  try { history.replaceState(null, '', '#' + g.code); } catch (e) {}
+  render();
+}
+
+function netSend(a) {
+  if (clientConn && clientConn.open) { try { clientConn.send({ t: 'act', a: clone(a) }); return; } catch (e) {} }
+  app.waitV = null; render();
+  toast('Bağlantı yok; yeniden bağlanılıyor, birazdan tekrar dene.');
+}
+
+// ---------- başlangıç ----------
+(function init() {
+  app.canWrite = true;
+  app.onlineStatus = typeof Peer === 'undefined' ? 'off' : 'ready';
+  loadMyGames();
+  const h = (location.hash || '').slice(1).toUpperCase();
+  if (/^[A-Z]{4}$/.test(h)) {
+    const saved = loadHost(h);
+    if (saved && saved.host === myUid && app.onlineStatus === 'ready') { render(); startHost(saved, false, 0); return; }
+    app.prefillCode = h;
+  }
+  render();
+})();
+
+</script></body></html>
