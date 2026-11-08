@@ -489,8 +489,8 @@ const Engine = (() => {
     debt:        { name: 'Tahsilat', v: 3, n: 3, d: 'Seçtiğin bir rakip sana 5M öder.' },
     birthday:    { name: 'Doğum Günü', v: 2, n: 3, d: 'Herkes sana 2M hediye öder.' },
     passgo:      { name: 'Tekrar Çek', v: 1, n: 10, d: 'Desteden 2 kart daha çek.' },
-    house:       { name: 'Ev', v: 3, n: 3, d: 'Tamamlanmış bir sete ekle: kira +3M. (İstasyon/İdare hariç)' },
-    hotel:       { name: 'Otel', v: 4, n: 2, d: 'Evli tamamlanmış bir sete ekle: kira +4M. (İstasyon/İdare hariç)' },
+    house:       { name: 'Ev', v: 3, n: 3, d: 'Tamamlanmış bir sete ekle: kira +3M.' },
+    hotel:       { name: 'Otel', v: 4, n: 2, d: 'Evli tamamlanmış bir sete ekle: kira +4M.' },
     double:      { name: 'Kirayı İkiye Katla', v: 1, n: 2, d: 'Bir Kira kartıyla birlikte oynanır; kira 2 katına çıkar.' },
   };
 
@@ -525,10 +525,10 @@ const Engine = (() => {
       players: players.map(p => ({ uid: p.uid, name: p.name, bot: !!p.bot, hand: [], bank: [], stacks: [] })),
       deck: shuffle(CARDS.map(c => c.id)), discard: [], turn: Math.floor(Math.random() * players.length),
       playsLeft: 3, phase: 'play', pending: null, winner: null, sid: 1, turnNo: 0, log: [], v: 0, last: null, bld: null,
-      target: Math.min(5, Math.max(2, opts.target || 3)), dupSets: opts.dupSets !== false,
+      target: Math.min(5, Math.max(2, opts.target || 3)), dupSets: opts.dupSets !== false, railBuild: !!opts.railBuild,
     };
     s.players.forEach(p => draw(s, p, 5));
-    log(s, `Oyun başladı! ${s.target} tam set toplayan kazanır${s.dupSets ? ' (aynı renkten iki set de sayılır)' : ' (setler farklı renkte olmalı)'}.`);
+    log(s, `Oyun başladı! ${s.target} tam set toplayan kazanır${s.dupSets ? ' (aynı renkten iki set de sayılır)' : ' (setler farklı renkte olmalı)'}.${s.railBuild ? ' İstasyon ve İdare setlerine ev/otel kurulabilir.' : ''}`);
     startTurn(s);
     return s;
   }
@@ -793,7 +793,7 @@ const Engine = (() => {
         case 'house': case 'hotel': {
           const st = p.stacks.find(x => x.sid === a.sid);
           if (!st || !complete(st)) return err('Tamamlanmış bir set seç.');
-          if (st.color === 'rail' || st.color === 'util') return err('İstasyon ve İdare setlerine ev/otel konamaz.');
+          if ((st.color === 'rail' || st.color === 'util') && !s.railBuild) return err('Bu oyunda İstasyon ve İdare setlerine ev/otel konamaz.');
           if (c.a === 'house' && st.house != null) return err('Bu sette zaten ev var.');
           if (c.a === 'hotel' && (st.house == null || st.hotel != null)) return err('Otel için sette ev olmalı ve otel olmamalı.');
           takeFromHand(p, id); st[c.a] = id; s.playsLeft--; setLast(s, seat, id, 'act', st.color);
@@ -1055,7 +1055,7 @@ const Bot = (() => {
     if (by('debt').length) { const t = opp.slice().sort((x, y) => assetTotal(s.players[y]) - assetTotal(s.players[x]))[0]; if (assetTotal(s.players[t]) > 0) return { t: 'play', card: by('debt')[0], target: t }; }
     if (by('birthday').length && oppMoney > 0) return { t: 'play', card: by('birthday')[0] };
     // 8) Ev / Otel
-    for (const h of by('house')) { const st = p.stacks.find(x => complete(x) && x.house == null && x.color !== 'rail' && x.color !== 'util'); if (st) return { t: 'play', card: h, sid: st.sid }; }
+    for (const h of by('house')) { const st = p.stacks.find(x => complete(x) && x.house == null && (s.railBuild || (x.color !== 'rail' && x.color !== 'util'))); if (st) return { t: 'play', card: h, sid: st.sid }; }
     for (const h of by('hotel')) { const st = p.stacks.find(x => complete(x) && x.house != null && x.hotel == null); if (st) return { t: 'play', card: h, sid: st.sid }; }
     // 9) Para bankaya
     const money = hand.filter(id => C(id).k === 'money').sort((a, b) => C(b).v - C(a).v)[0];
@@ -1097,7 +1097,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
 const app = {
   view: 'home', local: false, code: null, game: null, state: null, mySeat: -1, isHost: false,
-  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, maxPlayers: 3, lastShown: -1, lastBld: -1,
+  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, railBuild: false, maxPlayers: 3, lastShown: -1, lastBld: -1,
   ui: { modal: null, sel: new Set(), openOpps: new Set() },
   myGames: [], lobbies: [], onlineStatus: 'loading', canWrite: true,
 };
@@ -1306,6 +1306,7 @@ function homeHTML() {
         <div class="row" data-k="${kBc}">Bot sayısı: ${[1, 2, 3, 4].map(n => `<button data-n="${n}" class="${app.botCount === n ? 'primary' : 'ghost'}">${n}</button>`).join('')}</div>
         ${targetPicker(app.target, n => { app.target = n; render(); })}
         ${dupPicker(app.dupSets, v => { app.dupSets = v; render(); })}
+        ${railPicker(app.railBuild, v => { app.railBuild = v; render(); })}
         <button class="primary" data-k="${kBots}">Botlarla başlat</button>
       </div>
     </div>
@@ -1326,6 +1327,10 @@ function targetPicker(cur, fn, dis = false) {
   return `<div class="row" data-k="${k}">Kaç sette bitsin: ${[2, 3, 4, 5].map(n => `<button ${dis ? 'disabled' : ''} data-t="${n}" class="${cur === n ? 'primary' : 'ghost'}">${n} set</button>`).join('')}</div>`;
 }
 
+function railPicker(cur, fn) {
+  const k = cb(e => { if (e.target.dataset.r) fn(e.target.dataset.r === '1'); });
+  return `<div class="row" data-k="${k}">İstasyon/İdare'ye ev-otel: <button data-r="0" class="${!cur ? 'primary' : 'ghost'}">Kurulamaz (resmi)</button><button data-r="1" class="${cur ? 'primary' : 'ghost'}">Kurulabilir</button></div>`;
+}
 function dupPicker(cur, fn, dis = false) {
   const k = cb(e => { if (e.target.dataset.d && !dis) fn(e.target.dataset.d === '1'); });
   return `<div class="row" data-k="${k}">Aynı renkten 2. set: <button ${dis ? 'disabled' : ''} data-d="1" class="${cur ? 'primary' : 'ghost'}">Sayılır</button><button ${dis ? 'disabled' : ''} data-d="0" class="${!cur ? 'primary' : 'ghost'}">Sayılmaz (resmi)</button></div>`;
@@ -1343,7 +1348,7 @@ function lobbyHTML() {
     <div class="row"><button class="ghost" data-k="${cb(goHome)}">← Ana sayfa</button></div>
     <div class="panel"><div class="muted">Oyun kodu</div><div class="bigcode">${esc(g.code)}</div>
       ${window.NET_MODE === 'p2p' ? netShareHTML(g.code) : '<div class="muted">Arkadaşların bu sayfayı açıp kodu yazsın ya da "Açık lobiler" listesinden katılsın.</div>'}</div>
-    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'}</div>`}</div>
+    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) + railPicker(!!g.railBuild, v => writeGame({ railBuild: v })) : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'} ${g.railBuild ? 'İstasyon ve İdare setlerine ev/otel kurulabilir.' : 'İstasyon ve İdare setlerine ev/otel kurulamaz.'}</div>`}</div>
     <div class="panel"><h2>Oyuncular (${g.players.length}/${maxOf(g)})</h2>
       ${host ? `<div class="row" data-k="${cb(e => { if (e.target.dataset.m) hostSetMax(+e.target.dataset.m); })}">Kaç kişilik: ${[2, 3, 4, 5].map(n => `<button data-m="${n}" ${n < g.players.length ? 'disabled' : ''} class="${maxOf(g) === n ? 'primary' : 'ghost'}">${n} kişi</button>`).join('')}</div>` : ''}
       <div class="list">${rows}</div>
@@ -1575,7 +1580,7 @@ function homeRules() {
     <li><b>Ödeme:</b> banka ve masandan; para üstü yok. Yetmiyorsa her şeyini verirsin.</li>
     <li><b>Kira:</b> iki renkli kira herkesten, Joker Kira tek rakipten. İkiye Katla kira kartıyla birlikte oynanır ve ayrıca 1 hamle sayılır.</li>
     <li><b>Tapu Devri / Değiş Tokuş</b> tam setlerden kart alamaz. <b>Haciz</b> tam seti ev/otel ile birlikte alır.</li>
-    <li><b>Ev</b> tam sete (+3M), <b>Otel</b> evli tam sete (+4M); İstasyon ve İdare'ye konmaz. Set bozulursa ev/otel bankana para olarak geçer.</li>
+    <li><b>Ev</b> tam sete (+3M), <b>Otel</b> evli tam sete (+4M). İstasyon ve İdare'ye resmi kuralda konmaz; oyun kurulurken "Kurulabilir" seçildiyse konur. Set bozulursa ev/otel bankana para olarak geçer.</li>
     <li><b>Ev kuralı:</b> tam seti bozmak 1 hamle; set olmamış gruptaki jokeri taşımak ücretsiz.</li></ul>`;
 }
 
@@ -1631,7 +1636,7 @@ function cardModal(m) {
       if (step === 'target') return head + '<h3>Kimden 5M alacaksın?</h3>' + targetButtons(t => { app.ui.modal = null; send({ t: 'play', card: id, target: t }); }) + cancelBtn();
       return head + `<div class="opts">${optBtn('Oyna: rakip seç', '5M tahsil et', go({ step: 'target' }), 'primary')}${bankOpt}</div>` + cancelBtn();
     case 'house': case 'hotel': {
-      const ok = p.stacks.filter(st => Engine.complete(st) && st.color !== 'rail' && st.color !== 'util' && (c.a === 'house' ? st.house == null : (st.house != null && st.hotel == null)));
+      const ok = p.stacks.filter(st => Engine.complete(st) && (s.railBuild || (st.color !== 'rail' && st.color !== 'util')) && (c.a === 'house' ? st.house == null : (st.house != null && st.hotel == null)));
       return head + `<div class="opts">${ok.map(st => optBtn(`${c.a === 'house' ? 'Ev' : 'Otel'} koy: ${COLORS[st.color].n}`, `kira ${rentOfStack(st)}M → ${rentOfStack(st) + (c.a === 'house' ? 3 : 4)}M`, playThen({ t: 'play', card: id, sid: st.sid }), 'primary')).join('')
         || `<div class="notice">${c.a === 'house' ? 'Ev için tamamlanmış bir set lazım.' : 'Otel için evli tamamlanmış bir set lazım.'}</div>`}${bankOpt}</div>` + cancelBtn();
     }
@@ -1704,7 +1709,7 @@ function setModal(m) {
   return `<h3><span class="sw" style="background:${col.hex}"></span>${esc(p.name)} · ${col.n}</h3>
     <div class="row"><span class="pill ${Engine.complete(st) ? 'gold' : ''}">${st.cards.length}/${col.size}${Engine.complete(st) ? ' · tam set' : ''}</span><span class="pill">Kira ${rentOfStack(st)}M</span><span class="pill">Para değeri ${stackValue(st)}M</span></div>
     <div class="pickgrid">${cards}${blds}</div>
-    <div class="muted" style="font-size:13px">Kira tablosu: ${col.rent.map((r, i) => `${i + 1} kart ${r}M`).join(' · ')}${st.color !== 'rail' && st.color !== 'util' ? ' · ev +3M, otel +4M' : ''}</div>
+    <div class="muted" style="font-size:13px">Kira tablosu: ${col.rent.map((r, i) => `${i + 1} kart ${r}M`).join(' · ')}${s.railBuild || (st.color !== 'rail' && st.color !== 'util') ? ' · ev +3M, otel +4M' : ''}</div>
     <div class="row"><button class="primary" data-k="${cb(closeModal)}">Kapat</button></div>`;
 }
 
@@ -1803,7 +1808,7 @@ function startLocal() {
   const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const players = [{ uid: 'me', name: (app.name || 'Ben').trim(), bot: false }, ...names.slice(0, app.botCount).map((n, i) => ({ uid: 'bot' + i, name: n, bot: true }))];
   app.local = true; app.isHost = false; app.code = null; app.game = null;
-  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
+  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets, railBuild: app.railBuild }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
   render(); scheduleBots();
 }
 
@@ -1855,13 +1860,13 @@ function hostRemove(i) {
 function hostStart() {
   const players = H.players || app.game.players;
   if (players.length < 2) return;
-  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false })); app.state = H.state;
+  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false, railBuild: !!app.game.railBuild })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state });
   app.view = 'game'; render(); scheduleBots();
 }
 function hostRestart() {
   const players = (H.state ? H.state.players : app.game.players).map(p => ({ uid: p.uid, name: p.name, bot: p.bot }));
-  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false })); app.state = H.state;
+  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false, railBuild: H.state ? !!H.state.railBuild : !!app.game.railBuild })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state }); render(); scheduleBots();
 }
 
@@ -1962,7 +1967,7 @@ function resetView(code) {
 function createGame() {
   const name = app.name.trim().slice(0, 16);
   startHost({ code: randCode(), host: myUid, status: 'lobby', players: [{ uid: myUid, name, bot: false }], uids: [myUid],
-    target: app.target || 3, dupSets: app.dupSets !== false, maxPlayers: app.maxPlayers || 3, state: null, notice: null, created: Date.now(), updated: Date.now() }, true, 0);
+    target: app.target || 3, dupSets: app.dupSets !== false, railBuild: !!app.railBuild, maxPlayers: app.maxPlayers || 3, state: null, notice: null, created: Date.now(), updated: Date.now() }, true, 0);
 }
 
 function startHost(game, fresh, tries) {
