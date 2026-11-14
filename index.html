@@ -837,7 +837,8 @@ html{overflow-x:hidden}
 }
 /* üst güvenli alan: telefonda Claude uygulaması içinde üstte yarı saydam başlık var; içerik onun altından başlar */
 :root{--topsafe:env(safe-area-inset-top)}
-.home.h2,.lobby{padding-top:calc(var(--topsafe) + 16px)}
+.home.h2{padding-top:calc(env(safe-area-inset-top) + 16px)}
+.lobby{padding-top:calc(var(--topsafe) + 16px)}
 .veil{padding-top:calc(var(--topsafe) + 12px)}
 @media (max-width:720px), (max-height:520px){ .veil:has(.modal.sheet){padding-top:0} }
 .minpill{top:calc(var(--topsafe) + 6px)}
@@ -970,6 +971,7 @@ const TX_RULES = [
   ['Oynamak istediğin karta tıkla.', 'Tap a card to play it.'],
   ['Fazla kartları atman gerekiyor.', 'You need to discard extra cards.'],
   ['Jokerin rengini değiştirmek için gruba dokun.', "Tap a group to change a wildcard's color."],
+  ['Sıra sonunda elinde en fazla 7 kart kalabilir. Atacağın kartlara dokun.', 'You may hold at most 7 cards at the end of your turn. Tap the cards to discard.'],
   ['Sıra sonunda elinde en fazla 7 kart kalabilir.', 'You may hold at most 7 cards at the end of your turn.'],
   ['Yetmiyor: her şeyini vermelisin.', 'Not enough: you must give everything.'],
   ['ya da ödeyeceğin kartları seç:', 'or choose the cards to pay with:'],
@@ -2288,7 +2290,8 @@ function setTopSafe() {
   const portraitPhone = window.innerWidth <= 720 && window.innerHeight > window.innerWidth;
   const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
   // ana ekrana eklenmiş uygulamada (standalone) iOS üst kenarı bulanıklaştırıyor: güvenli alanın altına ek boşluk
-  const v = inFrame && portraitPhone ? '96px' : (portraitPhone ? (standalone ? 'calc(env(safe-area-inset-top) + 36px)' : 'max(env(safe-area-inset-top), 12px)') : 'env(safe-area-inset-top)');
+  // tüm iç sayfalar ana sayfadaki ilk kutuyla aynı hizadan başlasın (üstteki bulanık şeridin altı)
+  const v = inFrame && portraitPhone ? '96px' : (portraitPhone ? 'calc(max(env(safe-area-inset-top), 12px) + 34px)' : 'env(safe-area-inset-top)');
   document.documentElement.style.setProperty('--topsafe', v);
 }
 setTopSafe(); window.addEventListener('resize', setTopSafe); window.addEventListener('orientationchange', setTopSafe);
@@ -3198,9 +3201,9 @@ function respondModal() {
 
 function discardModal() {
   const p = me(), need = p.hand.length - 7, sel = app.ui.sel;
-  const cards = p.hand.map(id => cardHTML(id, { size: 'md', sel: sel.has(id), k: cb(() => { sel.has(id) ? sel.delete(id) : (sel.size < need && sel.add(id)); render(); }) })).join('');
-  return `<h3>Elinde ${p.hand.length} kart var: ${need} kart at</h3><div class="muted">Sıra sonunda elinde en fazla 7 kart kalabilir.</div>
-    <div class="pickgrid">${cards}</div><div class="row"><button class="primary" ${sel.size === need ? '' : 'disabled'} data-k="${cb(() => send({ t: 'discard', cards: [...sel] }))}">${sel.size}/${need} kartı at</button></div>`;
+  const secs = [{ label: `Elin (${p.hand.length})`, cards: p.hand.map(id => ({ id, k: cb(() => { sel.has(id) ? sel.delete(id) : (sel.size < need && sel.add(id)); render(); }) })) }];
+  const btn = `<button class="primary" ${sel.size === need ? '' : 'disabled'} data-k="${cb(() => send({ t: 'discard', cards: [...sel] }))}">${sel.size}/${need} kartı at</button>`;
+  return sheetTop(`Elinde ${p.hand.length} kart var: ${need} kart at`, 'Sıra sonunda elinde en fazla 7 kart kalabilir. Atacağın kartlara dokun.', btn) + cardSecs(secs, sel);
 }
 
 // ---------- HAMLE GÖNDERME ----------
