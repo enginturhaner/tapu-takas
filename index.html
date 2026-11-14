@@ -733,6 +733,68 @@ html{overflow-x:hidden}
 .pay-cards .pc.hl .card{box-shadow:0 0 0 3px var(--gold),0 4px 12px rgba(0,0,0,.5)}
 .pay-cards .card.click:hover{transform:translateY(-3px)}
 
+/* ===== ANA SAYFA v2 ===== */
+.home.h2{max-width:1040px;gap:16px;padding:20px max(16px, env(safe-area-inset-right)) 32px max(16px, env(safe-area-inset-left))}
+.hero{position:relative;display:flex;align-items:center;gap:20px;padding:22px 24px;border-radius:22px;overflow:hidden;
+  background:radial-gradient(ellipse 80% 120% at 85% 50%, rgba(245,197,24,.18), transparent 60%), linear-gradient(135deg,#0f3b2b,#145c3f);border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.hero .htext{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;z-index:2}
+.hero .logo{font-family:var(--display);font-size:clamp(54px, 11vw, 96px);line-height:.9;color:var(--gold);letter-spacing:.04em;text-shadow:0 4px 0 #8a6a00,0 10px 24px rgba(0,0,0,.45)}
+.hero p{margin:0;color:#d9e9df;max-width:46ch;font-size:15px}
+.namebox{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:6px 6px 6px 14px;max-width:360px}
+.namebox span{font-size:12px;font-weight:800;letter-spacing:.12em;color:#e9d8b0;text-transform:uppercase}
+.namebox input{flex:1;min-width:0;background:transparent;border:0;color:#fff;font:inherit;font-size:17px;font-weight:700;padding:8px 6px;outline:none}
+.fan{position:relative;width:250px;height:190px;flex:0 0 auto}
+.fan .fc{position:absolute;top:10px;left:70px;transform-origin:50% 120%;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.fan .card{--w:112px}
+.fan .f0{transform:rotate(-16deg) translateX(-56px)}
+.fan .f1{transform:rotate(0deg) translateY(-8px);z-index:2}
+.fan .f2{transform:rotate(16deg) translateX(56px)}
+.cards2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.hc{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.hc h2{font-size:20px;display:flex;align-items:center;gap:8px;margin:0}
+.hc .ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.08);display:inline-flex;align-items:center;justify-content:center;font-size:18px}
+.hc button.big{min-height:52px;font-size:17px;border-radius:14px}
+.or{display:flex;align-items:center;gap:10px;color:#9fbfae;font-size:12px;text-transform:uppercase;letter-spacing:.1em}
+.or::before,.or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.12)}
+.joinrow{display:flex;gap:8px}
+.joinrow input{flex:1;min-width:0;text-align:center;letter-spacing:.3em;font-size:20px;font-weight:800;text-transform:uppercase;border-radius:12px}
+.joinrow button{min-width:96px;border-radius:12px}
+.hint2{font-size:12.5px;color:#9fbfae;line-height:1.4}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.opt .ol{font-size:13.5px;color:#d9e9df;font-weight:600}
+.seg{display:inline-flex;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:3px;gap:2px}
+.seg button{min-height:34px;padding:5px 12px;border:0;background:transparent;color:#cfe3d6;border-radius:9px;font-weight:700;font-size:13.5px;box-shadow:none;min-width:38px}
+.seg button.on{background:var(--gold);color:#2a1d00;box-shadow:0 2px 0 #a07f00}
+.seg button:disabled{opacity:.5}
+.hc.rules{padding:0}
+.hc.rules summary{cursor:pointer;padding:16px 18px;font-weight:800;font-size:16px;list-style:none;display:flex;justify-content:space-between}
+.hc.rules summary::after{content:"▾";opacity:.7}
+.hc.rules[open] summary::after{content:"▴"}
+.hc.rules ul{margin:0;padding:0 22px 18px 38px;color:#d9e9df;display:flex;flex-direction:column;gap:6px;font-size:14px}
+@media (max-width:760px){
+  .cards2{grid-template-columns:1fr}
+  .hero{flex-direction:column;align-items:stretch;padding:18px}
+  .fan{position:absolute;right:-30px;top:-6px;width:200px;height:160px;opacity:.9;transform:scale(.72);transform-origin:top right}
+  .hero .htext{gap:8px}
+  .namebox{max-width:none}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .home.h2{padding-top:10px;gap:10px}
+  .hero{padding:12px 18px}
+  .hero .logo{font-size:56px}
+  .fan{height:140px;width:220px}.fan .card{--w:86px}.fan .fc{left:66px}
+}
+.cards2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.cards2 > *,.hero > *{min-width:0}
+@media (max-width:760px){ .cards2{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:560px){
+  .fan{display:none}
+  .hero .logo{font-size:64px}
+  .opt{flex-wrap:nowrap}
+  .opt .ol{font-size:13px}
+  .seg button{padding:5px 9px;min-width:34px;font-size:13px}
+}
+
 </style></head><body><div id="app"></div>
 <script>
 // ===== OYUN MOTORU: Monopoly Deal kuralları (+ ev kuralı: yerdeki tapuyu başka renge taşımak 1 hamle) =====
@@ -992,7 +1054,7 @@ const Engine = (() => {
       }
       const t = s.players[pd.cur];
       const hasJsn = t.hand.some(id => isAct(id, 'jsn'));
-      if (pd.kind === 'pay' && !hasJsn && assetTotal(t) === 0) { log(s, `${t.name} ödeyecek bir şeyi yok.`); advance(s); continue; }
+      if (pd.kind === 'pay' && assetTotal(t) === 0) { log(s, `${t.name} ödeyecek bir şeyi yok.`); advance(s); continue; }
       break;
     }
     if (!s.pending) afterPlay(s);
@@ -1438,6 +1500,12 @@ const BotPro = (() => {
     // banka
     const bank = p.bank.reduce((x, id) => x + C(id).v, 0);
     sc += Math.min(bank, 12) * 4 + Math.max(0, Math.min(bank, 25) - 12) * 1.5 + Math.max(0, bank - 25) * 0.5;
+    // Engin'in kuralı: oyun başında küçük paraları bankaya koy ki tapular ödemede boşa gitmesin.
+    // Bankadaki kart adedi (bozuk para) ve ilk birkaç milyon ekstra değerli; masada tapu varken banka boşsa risk.
+    const nBank = p.bank.length, small = p.bank.filter(id => C(id).v <= 2).length;
+    sc += (TUNE.cushN ?? 7) * Math.min(nBank, 4) + (TUNE.cushS ?? 5) * Math.min(small, 3) + (TUNE.cushM ?? 4) * Math.min(bank, 6);
+    const exposed = p.stacks.filter(st => !complete(st)).reduce((x, st) => x + st.cards.length, 0);
+    if (isMe) sc -= (TUNE.risk ?? 3) * exposed * Math.max(0, 5 - bank);
     // el
     if (isMe) sc += p.hand.reduce((x, id) => x + handCardValue(s, p, id), 0);
     return sc;
@@ -1704,7 +1772,7 @@ const BotPro = (() => {
   const B = (typeof Bot !== 'undefined') ? Bot : require('./bot.js');
   const easy = B.decide, easyFallback = B.fallback;
   B.decide = (s, seat) => {
-    if (s.botLevel === 'easy') return easy(s, seat);
+    // bot seviyesi seçimi kaldırıldı: hep güçlü bot
     return BotPro.decide(s, seat) || easy(s, seat);
   };
   B.fallback = (s, seat) => easyFallback(s, seat);
@@ -1924,55 +1992,53 @@ function homeHTML() {
   const mine = app.myGames.filter(g => g.status !== 'over').slice(0, 8);
   const lob = app.lobbies.filter(g => !(g.uids || []).includes(myUid)).slice(0, 8);
   const gameItem = (g, label) => `<div class="item"><span><span class="code">${esc(g.code)}</span> <span class="muted">· ${esc((g.players || []).map(p => p.name).join(', '))}</span></span><button ${disabled} data-k="${cb(() => label === 'Katıl' ? joinByCode(g.code) : openGame(g.code))}">${label}</button></div>`;
-  return `<div class="home">
-    <div class="brand"><h1>DEAL</h1><p>Monopoly Deal kurallarıyla arkadaşlarınla online kart oyunu. Seçilen sayıda tam set toplayan kazanır.</p></div>
-    <div class="row"><label for="nameInput" class="muted">Adın</label><input id="nameInput" maxlength="16" placeholder="Örn. Engin" value="${esc(app.name)}"></div>
-    <div class="grid2">
-      <div class="panel"><h2>Online oyna</h2>${onlineMsg}${app.prefillCode ? `<div class="notice"><b class="code">${esc(app.prefillCode)}</b> oyununa davet edildin. Adını yaz ve <b>Katıl</b>'a bas.</div>` : ''}
-        <button class="primary" ${disabled} data-k="${kNew}">Yeni oyun kur</button>
-        <div class="muted" style="font-size:13px">Kaç sette biteceğini lobide seçeceksin.</div>
-        <div class="row"><label for="codeInput" class="muted">Kod</label><input id="codeInput" maxlength="4" placeholder="ABCD" value="${esc(app.prefillCode || '')}" style="width:110px;text-transform:uppercase"><button ${disabled} data-k="${kJoin}">Katıl</button></div>
+  const fanIds = [Engine.CARDS.findIndex(c => c.k === 'prop' && c.color === 'red'), Engine.CARDS.findIndex(c => c.k === 'act' && c.a === 'dealbreaker'), Engine.CARDS.findIndex(c => c.k === 'money' && c.v === 10)];
+  const fan = fanIds.map((id, i) => `<div class="fc f${i}">${cardHTML(id)}</div>`).join('');
+  return `<div class="home h2">
+    <section class="hero">
+      <div class="htext"><div class="logo">DEAL</div><p>Arkadaşlarınla online kart oyunu. Tapuları topla, kira iste, setleri kap. Seçilen sayıda tam set toplayan kazanır.</p>
+        <label class="namebox"><span>Adın</span><input id="nameInput" maxlength="16" placeholder="Örn. Engin" value="${esc(app.name)}"></label></div>
+      <div class="fan" aria-hidden="true">${fan}</div>
+    </section>
+    <div class="cards2">
+      <section class="hc online"><h2><span class="ic">👥</span>Arkadaşlarla oyna</h2>${onlineMsg}${app.prefillCode ? `<div class="notice"><b class="code">${esc(app.prefillCode)}</b> oyununa davet edildin. Adını yaz ve <b>Katıl</b>'a bas.</div>` : ''}
+        <button class="primary big" ${disabled} data-k="${kNew}">Yeni oyun kur</button>
+        <div class="or"><span>ya da kodla katıl</span></div>
+        <div class="joinrow"><input id="codeInput" maxlength="4" placeholder="KOD" value="${esc(app.prefillCode || '')}"><button ${disabled} data-k="${kJoin}">Katıl</button></div>
         ${mine.length ? `<div class="list"><b>Oyunlarım</b>${mine.map(g => gameItem(g, g.status === 'lobby' ? 'Lobiye dön' : 'Devam et')).join('')}</div>` : ''}
-        ${lob.length ? `<div class="list"><b>Açık lobiler</b>${lob.map(g => gameItem(g, 'Katıl')).join('')}</div>` : (online === 'ready' ? (window.NET_MODE === 'p2p' ? '<div class="muted">Oyun kurunca çıkan bağlantıyı arkadaşlarına gönder; açıp adlarını yazarak katılırlar.</div>' : '<div class="muted">Şu an açık lobi yok. Bir oyun kur, arkadaşların burada görsün.</div>') : '')}
-      </div>
-      <div class="panel"><h2>Botlarla dene</h2>
-        <div class="muted">Çevrimdışı deneme masası. Kurallar online oyunla aynı.</div>
-        <div class="row" data-k="${kBc}">Bot sayısı: ${[1, 2, 3, 4].map(n => `<button data-n="${n}" class="${app.botCount === n ? 'primary' : 'ghost'}">${n}</button>`).join('')}</div>
+        ${lob.length ? `<div class="list"><b>Açık lobiler</b>${lob.map(g => gameItem(g, 'Katıl')).join('')}</div>` : (online === 'ready' ? `<div class="hint2">${window.NET_MODE === 'p2p' ? 'Oyun kurunca çıkan bağlantıyı arkadaşlarına gönder; açıp adlarını yazarak katılırlar. Ayarları lobide seçersin.' : 'Bir oyun kur, arkadaşların burada görsün. Ayarları lobide seçersin.'}</div>` : '')}
+      </section>
+      <section class="hc bots"><h2><span class="ic">🤖</span>Botlarla dene</h2>
+        <div class="opt" data-k="${kBc}"><span class="ol">Bot sayısı</span><div class="seg">${[1, 2, 3, 4].map(n => `<button data-n="${n}" class="${app.botCount === n ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         ${targetPicker(app.target, n => { app.target = n; render(); })}
         ${dupPicker(app.dupSets, v => { app.dupSets = v; render(); })}
         ${railPicker(app.railBuild, v => { app.railBuild = v; render(); })}
-        ${levelPicker(app.botLevel, v => { app.botLevel = v; render(); })}
-        <button class="primary" data-k="${kBots}">Botlarla başlat</button>
-      </div>
+        <button class="primary big" data-k="${kBots}">Botlarla başlat</button>
+      </section>
     </div>
-    <div class="panel rules"><h2 style="color:var(--ink)">Kısa kurallar</h2><ul>
+    <details class="hc rules"><summary>Kısa kurallar</summary><ul>
       <li>Sıran gelince <b>2 kart</b> çekersin (elin boşsa 5). Sıra başına <b>en fazla 3 kart</b> oynarsın.</li>
       <li>Kartı tıkla: <b>bankaya koy</b> (para olarak), <b>tapu olarak aç</b> ya da <b>aksiyon olarak oyna</b>.</li>
       <li>Ödeme yaparken para üstü verilmez; banka ve masandaki kartlarla ödersin, elindekilerle değil.</li>
       <li><b>Reddet</b> sana yapılan hamleyi iptal eder; karşı taraf da Reddet ile karşılık verebilir.</li>
-      <li>Sıra sonunda elinde en fazla <b>7 kart</b> kalır. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin; önce hamlelerini yap.</li>
-      <li><b>Ev kuralımız:</b> tam bir setten joker çıkarıp seti bozmak <b>1 hamle</b> sayılır. Henüz set olmamış bir gruptaki jokerin rengini sıran boyunca ücretsiz değiştirebilirsin.</li>
+      <li>Sıra sonunda elinde en fazla <b>7 kart</b> kalır. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin.</li>
+      <li><b>Ev kuralımız:</b> tam bir setten joker çıkarıp seti bozmak <b>1 hamle</b> sayılır. Henüz set olmamış bir gruptaki jokerin rengini ücretsiz değiştirebilirsin.</li>
       <li>Sadece Renkli Joker'den oluşan bir yığın için kira istenemez. Setten kart çıkınca aynı renkte boşta duran tapun otomatik sete geçer. Set yine de bozulursa ev ve otel bankana <b>para olarak</b> geçer.</li>
-    </ul></div>
+    </ul></details>
   </div>`;
 }
 
 function targetPicker(cur, fn, dis = false) {
   const k = cb(e => { if (e.target.dataset.t && !dis) fn(+e.target.dataset.t); });
-  return `<div class="row" data-k="${k}">Kaç sette bitsin: ${[2, 3, 4, 5].map(n => `<button ${dis ? 'disabled' : ''} data-t="${n}" class="${cur === n ? 'primary' : 'ghost'}">${n} set</button>`).join('')}</div>`;
-}
-
-function levelPicker(cur, fn) {
-  const k = cb(e => { if (e.target.dataset.l) fn(e.target.dataset.l); });
-  return `<div class="row" data-k="${k}">Bot seviyesi: <button data-l="easy" class="${cur === 'easy' ? 'primary' : 'ghost'}">Kolay</button><button data-l="hard" class="${cur !== 'easy' ? 'primary' : 'ghost'}">Zor</button></div>`;
+  return `<div class="opt" data-k="${k}"><span class="ol">Kaç sette bitsin</span><div class="seg">${[2, 3, 4, 5].map(n => `<button ${dis ? 'disabled' : ''} data-t="${n}" class="${cur === n ? 'on' : ''}">${n}</button>`).join('')}</div></div>`;
 }
 function railPicker(cur, fn) {
   const k = cb(e => { if (e.target.dataset.r) fn(e.target.dataset.r === '1'); });
-  return `<div class="row" data-k="${k}">İstasyon/İdare'ye ev-otel: <button data-r="0" class="${!cur ? 'primary' : 'ghost'}">Kurulamaz</button><button data-r="1" class="${cur ? 'primary' : 'ghost'}">Kurulabilir</button></div>`;
+  return `<div class="opt" data-k="${k}"><span class="ol">İstasyon/İdare'ye ev-otel</span><div class="seg"><button data-r="0" class="${!cur ? 'on' : ''}">Kurulamaz</button><button data-r="1" class="${cur ? 'on' : ''}">Kurulabilir</button></div></div>`;
 }
 function dupPicker(cur, fn, dis = false) {
   const k = cb(e => { if (e.target.dataset.d && !dis) fn(e.target.dataset.d === '1'); });
-  return `<div class="row" data-k="${k}">Aynı renkten 2. set: <button ${dis ? 'disabled' : ''} data-d="1" class="${cur ? 'primary' : 'ghost'}">Sayılır</button><button ${dis ? 'disabled' : ''} data-d="0" class="${!cur ? 'primary' : 'ghost'}">Sayılmaz</button></div>`;
+  return `<div class="opt" data-k="${k}"><span class="ol">Aynı renkten 2. set</span><div class="seg"><button ${dis ? 'disabled' : ''} data-d="1" class="${cur ? 'on' : ''}">Sayılır</button><button ${dis ? 'disabled' : ''} data-d="0" class="${!cur ? 'on' : ''}">Sayılmaz</button></div></div>`;
 }
 
 // ---------- LOBİ ----------
@@ -1987,7 +2053,7 @@ function lobbyHTML() {
     <div class="row"><button class="ghost" data-k="${cb(goHome)}">← Ana sayfa</button></div>
     <div class="panel"><div class="muted">Oyun kodu</div><div class="bigcode">${esc(g.code)}</div>
       ${window.NET_MODE === 'p2p' ? netShareHTML(g.code) : '<div class="muted">Arkadaşların bu sayfayı açıp kodu yazsın ya da "Açık lobiler" listesinden katılsın.</div>'}</div>
-    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) + railPicker(!!g.railBuild, v => writeGame({ railBuild: v })) + (g.players.some(p => p.bot) ? levelPicker(g.botLevel || 'hard', v => writeGame({ botLevel: v })) : '') : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'} ${g.railBuild ? 'İstasyon ve İdare setlerine ev/otel kurulabilir.' : 'İstasyon ve İdare setlerine ev/otel kurulamaz.'}</div>`}</div>
+    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) + railPicker(!!g.railBuild, v => writeGame({ railBuild: v })) : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'} ${g.railBuild ? 'İstasyon ve İdare setlerine ev/otel kurulabilir.' : 'İstasyon ve İdare setlerine ev/otel kurulamaz.'}</div>`}</div>
     <div class="panel"><h2>Oyuncular (${g.players.length}/${maxOf(g)})</h2>
       ${host ? `<div class="row" data-k="${cb(e => { if (e.target.dataset.m) hostSetMax(+e.target.dataset.m); })}">Kaç kişilik: ${[2, 3, 4, 5].map(n => `<button data-m="${n}" ${n < g.players.length ? 'disabled' : ''} class="${maxOf(g) === n ? 'primary' : 'ghost'}">${n} kişi</button>`).join('')}</div>` : ''}
       <div class="list">${rows}</div>
@@ -2628,7 +2694,7 @@ function startLocal() {
   const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const players = [{ uid: 'me', name: (app.name || 'Ben').trim(), bot: false }, ...names.slice(0, app.botCount).map((n, i) => ({ uid: 'bot' + i, name: n, bot: true }))];
   app.local = true; app.isHost = false; app.code = null; app.game = null;
-  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets, railBuild: app.railBuild, botLevel: app.botLevel }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
+  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets, railBuild: app.railBuild, botLevel: 'hard' }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
   render(); scheduleBots();
 }
 
@@ -2680,13 +2746,13 @@ function hostRemove(i) {
 function hostStart() {
   const players = H.players || app.game.players;
   if (players.length < 2) return;
-  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false, railBuild: !!app.game.railBuild, botLevel: app.game.botLevel || 'hard' })); app.state = H.state;
+  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false, railBuild: !!app.game.railBuild, botLevel: 'hard' })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state });
   app.view = 'game'; render(); scheduleBots();
 }
 function hostRestart() {
   const players = (H.state ? H.state.players : app.game.players).map(p => ({ uid: p.uid, name: p.name, bot: p.bot }));
-  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false, railBuild: H.state ? !!H.state.railBuild : !!app.game.railBuild, botLevel: (H.state && H.state.botLevel) || app.game.botLevel || 'hard' })); app.state = H.state;
+  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false, railBuild: H.state ? !!H.state.railBuild : !!app.game.railBuild, botLevel: 'hard' })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state }); render(); scheduleBots();
 }
 
