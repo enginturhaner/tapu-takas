@@ -750,10 +750,10 @@ html{overflow-x:hidden}
 .fan .f1{transform:rotate(0deg) translateY(-8px);z-index:2}
 .fan .f2{transform:rotate(16deg) translateX(56px)}
 .cards2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.hc{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
-.hc h2{font-size:20px;display:flex;align-items:center;gap:8px;margin:0}
-.hc .ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.08);display:inline-flex;align-items:center;justify-content:center;font-size:18px}
-.hc button.big{min-height:52px;font-size:17px;border-radius:14px}
+.hcard{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.hcard h2{font-size:20px;display:flex;align-items:center;gap:8px;margin:0}
+.hcard .ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.08);display:inline-flex;align-items:center;justify-content:center;font-size:18px}
+.hcard button.big{min-height:52px;font-size:17px;border-radius:14px}
 .or{display:flex;align-items:center;gap:10px;color:#9fbfae;font-size:12px;text-transform:uppercase;letter-spacing:.1em}
 .or::before,.or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.12)}
 .joinrow{display:flex;gap:8px}
@@ -766,11 +766,11 @@ html{overflow-x:hidden}
 .seg button{min-height:34px;padding:5px 12px;border:0;background:transparent;color:#cfe3d6;border-radius:9px;font-weight:700;font-size:13.5px;box-shadow:none;min-width:38px}
 .seg button.on{background:var(--gold);color:#2a1d00;box-shadow:0 2px 0 #a07f00}
 .seg button:disabled{opacity:.5}
-.hc.rules{padding:0}
-.hc.rules summary{cursor:pointer;padding:16px 18px;font-weight:800;font-size:16px;list-style:none;display:flex;justify-content:space-between}
-.hc.rules summary::after{content:"▾";opacity:.7}
-.hc.rules[open] summary::after{content:"▴"}
-.hc.rules ul{margin:0;padding:0 22px 18px 38px;color:#d9e9df;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.hcard.rules{padding:0}
+.hcard.rules summary{cursor:pointer;padding:16px 18px;font-weight:800;font-size:16px;list-style:none;display:flex;justify-content:space-between}
+.hcard.rules summary::after{content:"▾";opacity:.7}
+.hcard.rules[open] summary::after{content:"▴"}
+.hcard.rules ul{margin:0;padding:0 22px 18px 38px;color:#d9e9df;display:flex;flex-direction:column;gap:6px;font-size:14px}
 @media (max-width:760px){
   .cards2{grid-template-columns:1fr}
   .hero{flex-direction:column;align-items:stretch;padding:18px}
@@ -794,6 +794,15 @@ html{overflow-x:hidden}
   .opt .ol{font-size:13px}
   .seg button{padding:5px 9px;min-width:34px;font-size:13px}
 }
+/* küçültülmüş yanıt bekleyen istek */
+.minpill{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:max(10px, env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;
+  max-width:min(620px, calc(100% - 20px));background:#2a1d00;border:2px solid var(--gold);border-radius:16px;padding:6px 6px 6px 12px;box-shadow:0 10px 30px rgba(0,0,0,.6);color:#fff}
+.minpill .t{font-size:13px;font-weight:700;line-height:1.25;flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.minpill button{min-height:40px;padding:6px 16px;flex:0 0 auto}
+.minpill .pulse{width:10px;height:10px;border-radius:50%;background:var(--gold);flex:0 0 auto;animation:mpulse 1.2s ease-in-out infinite}
+@keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,24,.7)}50%{box-shadow:0 0 0 7px rgba(245,197,24,0)}}
+@media (max-height:520px) and (orientation:landscape){ .minpill{top:4px;bottom:auto;left:auto;right:max(56px, calc(env(safe-area-inset-right) + 50px));transform:none;max-width:52%;padding:4px 4px 4px 10px} .minpill .t{font-size:11.5px} .minpill button{min-height:34px;padding:4px 12px} }
+.minb{white-space:nowrap}
 
 </style></head><body><div id="app"></div>
 <script>
@@ -2001,14 +2010,14 @@ function homeHTML() {
       <div class="fan" aria-hidden="true">${fan}</div>
     </section>
     <div class="cards2">
-      <section class="hc online"><h2><span class="ic">👥</span>Arkadaşlarla oyna</h2>${onlineMsg}${app.prefillCode ? `<div class="notice"><b class="code">${esc(app.prefillCode)}</b> oyununa davet edildin. Adını yaz ve <b>Katıl</b>'a bas.</div>` : ''}
+      <section class="hcard online"><h2><span class="ic">👥</span>Arkadaşlarla oyna</h2>${onlineMsg}${app.prefillCode ? `<div class="notice"><b class="code">${esc(app.prefillCode)}</b> oyununa davet edildin. Adını yaz ve <b>Katıl</b>'a bas.</div>` : ''}
         <button class="primary big" ${disabled} data-k="${kNew}">Yeni oyun kur</button>
         <div class="or"><span>ya da kodla katıl</span></div>
         <div class="joinrow"><input id="codeInput" maxlength="4" placeholder="KOD" value="${esc(app.prefillCode || '')}"><button ${disabled} data-k="${kJoin}">Katıl</button></div>
         ${mine.length ? `<div class="list"><b>Oyunlarım</b>${mine.map(g => gameItem(g, g.status === 'lobby' ? 'Lobiye dön' : 'Devam et')).join('')}</div>` : ''}
         ${lob.length ? `<div class="list"><b>Açık lobiler</b>${lob.map(g => gameItem(g, 'Katıl')).join('')}</div>` : (online === 'ready' ? `<div class="hint2">${window.NET_MODE === 'p2p' ? 'Oyun kurunca çıkan bağlantıyı arkadaşlarına gönder; açıp adlarını yazarak katılırlar. Ayarları lobide seçersin.' : 'Bir oyun kur, arkadaşların burada görsün. Ayarları lobide seçersin.'}</div>` : '')}
       </section>
-      <section class="hc bots"><h2><span class="ic">🤖</span>Botlarla dene</h2>
+      <section class="hcard bots"><h2><span class="ic">🤖</span>Botlarla dene</h2>
         <div class="opt" data-k="${kBc}"><span class="ol">Bot sayısı</span><div class="seg">${[1, 2, 3, 4].map(n => `<button data-n="${n}" class="${app.botCount === n ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         ${targetPicker(app.target, n => { app.target = n; render(); })}
         ${dupPicker(app.dupSets, v => { app.dupSets = v; render(); })}
@@ -2016,7 +2025,7 @@ function homeHTML() {
         <button class="primary big" data-k="${kBots}">Botlarla başlat</button>
       </section>
     </div>
-    <details class="hc rules"><summary>Kısa kurallar</summary><ul>
+    <details class="hcard rules"><summary>Kısa kurallar</summary><ul>
       <li>Sıran gelince <b>2 kart</b> çekersin (elin boşsa 5). Sıra başına <b>en fazla 3 kart</b> oynarsın.</li>
       <li>Kartı tıkla: <b>bankaya koy</b> (para olarak), <b>tapu olarak aç</b> ya da <b>aksiyon olarak oyna</b>.</li>
       <li>Ödeme yaparken para üstü verilmez; banka ve masandaki kartlarla ödersin, elindekilerle değil.</li>
@@ -2161,6 +2170,7 @@ function landHTML() {
   }
   return `<div class="game lp3">${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
 }
+const minBtn = () => `<button class="ghost minb" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}" title="Sayfayı küçült, masaya bak">▾ Masaya bak</button>`;
 function cardSecs(secs, sel = new Set()) {
   // bölümler halinde gerçek kartlar; kart boyu ekrana sığacak şekilde (render sonrası ayrıca küçültülür)
   const availW = window.innerWidth - 44, availH = window.innerHeight - 88, GAP = 5, PAD = 16, LBL = 34;
@@ -2203,7 +2213,7 @@ function payLand() {
   const kPay = cb(() => send({ t: 'pay', cards: [...sel] }));
   return `<!--sheet--><div class="pay-top"><div class="pt"><b>${describePending(s)}</b>
       <div class="meter"><i style="width:${pct}%"></i><span>Seçilen <b>${sum}M</b> / borç <b>${pd.amount}M</b>${total < pd.amount ? ` · varlığın ${total}M, hepsini vermelisin` : ' · para üstü verilmez'}</span></div></div>
-    <div class="pa">${jsn ? `<button class="danger" data-k="${cb(() => send({ t: 'jsn' }))}">✋ Reddet (${jsn})</button>` : ''}<button data-k="${kAuto}">Otomatik</button><button class="primary" ${valid ? '' : 'disabled'} data-k="${kPay}">${sum ? `${sum}M öde` : 'Öde'}</button></div></div>
+    <div class="pa">${minBtn()}${jsn ? `<button class="danger" data-k="${cb(() => send({ t: 'jsn' }))}">✋ Reddet (${jsn})</button>` : ''}<button data-k="${kAuto}">Otomatik</button><button class="primary" ${valid ? '' : 'disabled'} data-k="${kPay}">${sum ? `${sum}M öde` : 'Öde'}</button></div></div>
     ${body}`;
 }
 function oppModal(m) {
@@ -2403,15 +2413,26 @@ function modalHTML() {
     return '<div class="veil"><div class="modal"><h3>Hamle gönderildi…</h3><div class="muted">Kurucunun tarayıcısı işliyor.</div></div></div>';
   const auto = autoModal();
   let m = app.ui.modal;
-  if (auto) {
-    if (!m || m.type !== auto.type || m.key !== stateKey()) { app.ui.modal = m = { ...auto, key: stateKey() }; app.ui.sel = new Set(); }
+  let pill = '';
+  // yanıt sırasında masaya bakmak için istek sayfası küçültülebilir; yanıt vermek yine zorunlu (oyun bekler)
+  if (auto && auto.type !== 'over' && app.ui.minKey === stateKey()) {
+    const s = S();
+    const txt = auto.type === 'respond' ? describePending(s) : `Elinde ${me().hand.length} kart var: ${me().hand.length - 7} kart atmalısın`;
+    pill = `<div class="minpill" role="status"><span class="pulse"></span><span class="t">${txt}</span><button class="primary" data-k="${cb(() => { app.ui.minKey = null; app.ui.modal = null; app.ui.sel = app.ui.respSel || new Set(); render(); })}">${auto.type === 'respond' ? 'Yanıtla' : 'Kart at'}</button></div>`;
+    if (m && !['opp', 'set', 'card', 'log', 'rules', 'menu'].includes(m.type)) { app.ui.modal = m = null; }
+    if (!m) return pill;
+  } else if (auto) {
+    if (!m || m.type !== auto.type || m.key !== stateKey()) {
+      app.ui.modal = m = { ...auto, key: stateKey() };
+      if (app.ui.selKey !== stateKey()) { app.ui.sel = new Set(); app.ui.selKey = stateKey(); }
+    }
   } else if (m && ['respond', 'discard', 'over'].includes(m.type)) { app.ui.modal = m = null; }
   if (!m) return '';
   let body = '';
   try { body = renderModal(m); } catch (e) { console.error(e); body = '<h3>Bir hata oluştu</h3>'; }
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
-  return `<div class="veil" data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
+  return pill + `<div class="veil" data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
@@ -2600,7 +2621,7 @@ function respondModal() {
   const jsnBtn = jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet <small>(elinde ${jsn})</small></button>` : '';
   if (pd.stage === 'actor') {
     return `<h3>${pname(pd.cur)} hamleni reddetti</h3><div class="muted">${describePending(s)}. Sen de Reddet oynarsan hamlen geçerli olur.</div>
-      <div class="row">${jsnBtn}<button data-k="${cb(() => send({ t: 'accept' }))}">Kabul et (hamle iptal)</button></div>`;
+      <div class="row">${jsnBtn}<button data-k="${cb(() => send({ t: 'accept' }))}">Kabul et (hamle iptal)</button>${minBtn()}</div>`;
   }
   const title = `<h3>${describePending(s)}</h3>`;
   if (pd.kind === 'steal') {
@@ -2615,7 +2636,7 @@ function respondModal() {
       secs.push({ label: 'Senden alınacak', hex: tc ? COLORS[tc].hex : '#c0392b', cards: [{ id: pd.take, color: tc, ro: true, hl: true }] });
       if (pd.act === 'forced') { const gc = Engine.colorOnTable(s.players[pd.actor], pd.give); secs.push({ label: 'Sana verilecek', hex: gc ? COLORS[gc].hex : '#2e8b57', cards: [{ id: pd.give, color: gc, ro: true }] }); }
     }
-    const btns = `${jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet (${jsn})</button>` : ''}<button class="primary" data-k="${cb(() => send({ t: 'accept' }))}">Kabul et</button>`;
+    const btns = `${minBtn()}${jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet (${jsn})</button>` : ''}<button class="primary" data-k="${cb(() => send({ t: 'accept' }))}">Kabul et</button>`;
     return sheetTop(describePending(s), jsn ? 'Reddet kartınla bu hamleyi iptal edebilirsin.' : 'Elinde Reddet kartı yok.', btns) + cardSecs(secs);
   }
 
@@ -2645,7 +2666,7 @@ function discardModal() {
   const p = me(), need = p.hand.length - 7, sel = app.ui.sel;
   const cards = p.hand.map(id => cardHTML(id, { size: 'md', sel: sel.has(id), k: cb(() => { sel.has(id) ? sel.delete(id) : (sel.size < need && sel.add(id)); render(); }) })).join('');
   return `<h3>Elinde ${p.hand.length} kart var: ${need} kart at</h3><div class="muted">Sıra sonunda elinde en fazla 7 kart kalabilir.</div>
-    <div class="pickgrid">${cards}</div><div class="row"><button class="primary" ${sel.size === need ? '' : 'disabled'} data-k="${cb(() => send({ t: 'discard', cards: [...sel] }))}">${sel.size}/${need} kartı at</button></div>`;
+    <div class="pickgrid">${cards}</div><div class="row"><button class="primary" ${sel.size === need ? '' : 'disabled'} data-k="${cb(() => send({ t: 'discard', cards: [...sel] }))}">${sel.size}/${need} kartı at</button>${minBtn()}</div>`;
 }
 
 // ---------- HAMLE GÖNDERME ----------
