@@ -2614,7 +2614,9 @@ function lpOpp(i) {
     <div class="ob">${lpCoins(p)}<div class="gs" data-sk="g${i}">${gs}</div></div></section>`;
 }
 function lpPile(st, seat, w) {
-  const col = COLORS[st.color], n = st.cards.length, done = Engine.complete(st), off = Math.round(w * 0.44);
+  const col = COLORS[st.color], n = st.cards.length, done = Engine.complete(st);
+  // 4 kartlık (istasyon) ya da kalabalık gruplar 3 kartlık yığın yüksekliğini aşmasın: kartlar daha sık üst üste biner
+  const off = Math.round(n > 3 ? (w * 0.88) / (n - 1) : w * 0.44);
   const cards = st.cards.map((id, i) => `<div class="pl-c" style="top:${i * off}px">${cardHTML(id, { color: st.color })}</div>`).join('');
   const b = (st.house != null ? `<em class="hb" title="Ev">${icon('house')}</em>` : '') + (st.hotel != null ? `<em class="hb ht" title="Otel">${icon('hotel')}</em>` : '');
   const k = cb(() => openModal({ type: 'set', sid: st.sid, seat }));
