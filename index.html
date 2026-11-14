@@ -812,6 +812,30 @@ html{overflow-x:hidden}
 @media (max-width:560px){ .hero .langsw{position:static;align-self:flex-end;margin-bottom:-6px} }
 .hero .fan{margin-top:34px}
 
+/* ===== TELEFON DİK v2 (tek ekran) ===== */
+.game.pt3{position:fixed;inset:0;overflow:hidden;display:flex;flex-direction:column;gap:6px;box-shadow:none;height:auto;min-height:0;
+  padding:calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 4px) 10px !important;
+  background:radial-gradient(ellipse 90% 70% at 50% 40%,#1d7050 0%,#155a40 50%,#0f442f 100%)}
+.pt3 .po3{flex:1 1 auto;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none}
+.pt3 .po3::-webkit-scrollbar{display:none}
+.pt3 .o3{flex:0 0 auto}
+.pt3 .f3 .fl p{font-size:11px}
+.pt3 .pm3{flex:0 0 auto;background:rgba(0,0,0,.16);border:1.5px dashed rgba(233,216,176,.3);border-radius:12px;padding:6px 8px}
+.pt3 .ph3hand{flex:0 0 auto;position:relative}
+.pt3 .ph3hand .row{position:absolute;left:0;right:0;top:2px;bottom:auto;justify-content:center}
+.pt3 .h3 .e3{min-height:36px}
+/* istek/ödeme sayfaları: üst güvenli alan ve dik düzen */
+.modal.sheet{padding-top:calc(env(safe-area-inset-top) + 10px) !important;padding-bottom:calc(env(safe-area-inset-bottom) + 8px) !important}
+@media (max-width:720px) and (orientation:portrait){
+  .pay-top{flex-direction:column;align-items:stretch;gap:8px}
+  .pay-top .pt > b{white-space:normal;font-size:15px;line-height:1.3}
+  .pay-top .pa{justify-content:flex-end;flex-wrap:wrap}
+  .pay-top .pa button{flex:1 1 auto}
+  .meter span{white-space:normal;line-height:1.25;padding:4px 10px}
+  .meter{height:auto;min-height:24px}
+  .minfab{bottom:calc(env(safe-area-inset-bottom) + 10px)}
+}
+
 </style></head><body><div id="app"></div>
 <script>
 // ===== DİL (Türkçe / English) =====
@@ -1862,7 +1886,7 @@ const BotPro = (() => {
     sc += Math.min(bank, 12) * 4 + Math.max(0, Math.min(bank, 25) - 12) * 1.5 + Math.max(0, bank - 25) * 0.5;
     // Engin'in kuralı: oyun başında küçük paraları bankaya koy ki tapular ödemede boşa gitmesin.
     // Bankadaki kart adedi (bozuk para) ve ilk birkaç milyon ekstra değerli; masada tapu varken banka boşsa risk.
-    const nBank = p.bank.length, small = p.bank.filter(id => C(id).v <= 2).length;
+    const money = p.bank.filter(id => C(id).k === 'money'), nBank = money.length, small = money.filter(id => C(id).v <= 2).length;
     sc += (TUNE.cushN ?? 7) * Math.min(nBank, 4) + (TUNE.cushS ?? 5) * Math.min(small, 3) + (TUNE.cushM ?? 4) * Math.min(bank, 6);
     const exposed = p.stacks.filter(st => !complete(st)).reduce((x, st) => x + st.cards.length, 0);
     if (isMe) sc -= (TUNE.risk ?? 3) * exposed * Math.max(0, 5 - bank);
@@ -1922,7 +1946,7 @@ const BotPro = (() => {
       cols.forEach(col => {
         if (col === st.color) return;
         // joker tek başına yeni bir gruba taşınmaz; yalnızca gerçek tapulu ya da tamamlanacak gruba
-        const ok = p.stacks.some(x => x.color === col && !complete(x) && (x.cards.some(y => C(y).k === 'prop') || x.cards.length + 1 >= COLORS[col].size));
+        const ok = p.stacks.some(x => x.color === col && !complete(x) && x.cards.length + 1 >= COLORS[col].size);
         if (ok) out.push({ t: 'move', card: id, color: col });
       });
     }));
@@ -1931,12 +1955,14 @@ const BotPro = (() => {
       const c = C(id);
       const key = c.k === 'money' ? 'm' + c.v : c.k === 'act' ? 'a' + c.a : c.k === 'rent' ? 'r' + JSON.stringify(c.colors) : 'p' + id;
       if (seen.has(key)) return; seen.add(key);
-      if (c.k !== 'prop' && c.k !== 'wild') out.push({ t: 'bank', card: id });
+      // Engin'in kuralı: Haciz ve Reddet asla para olarak bankaya konmaz (yalnızca 7+ kartla başka çare yoksa)
+      if (c.k !== 'prop' && c.k !== 'wild') ((c.k === 'act' && (c.a === 'dealbreaker' || c.a === 'jsn')) ? lone : out).push({ t: 'bank', card: id });
       if (c.k === 'prop') out.push({ t: 'prop', card: id });
       if (c.k === 'wild') (c.colors === 'any' ? CK : c.colors).forEach(col => {
         // kural: joker asla tek başına açılmaz (rakip Tapu Devri ile hemen alır). Yalnızca içinde gerçek tapu olan gruba ya da seti tamamlayacaksa.
         const size = COLORS[col].size;
-        const ok = p.stacks.some(st => st.color === col && !complete(st) && (st.cards.some(x => C(x).k === 'prop') || st.cards.length + 1 >= size));
+        // Engin'in kuralı: joker yalnızca seti TAMAMLAYACAKSA açılır (yarım sette Tapu Devri ile kolayca alınır)
+        const ok = p.stacks.some(st => st.color === col && !complete(st) && st.cards.length + 1 >= size);
         (ok ? out : lone).push({ t: 'prop', card: id, color: col });
       });
       if (c.k === 'rent') {
@@ -2017,7 +2043,9 @@ const BotPro = (() => {
       if (v > bestV) { bestV = v; best = o.a; }
     });
     const canEnd = !E.mustPlay(s);
-    if (best && (bestV > base + 1 || !canEnd)) return best;
+    // 3 hamleyi doldurmak zorunda değil: hamle kartını bankaya koymak gibi küçük kazançlar için kart harcama
+    const need = best && best.t === 'bank' && C(best.card).k !== 'money' ? (TUNE.bankActMin ?? 10) : 1;
+    if (best && (bestV > base + need || !canEnd)) return best;
     if (!canEnd && cands.length) return cands.find(a => a.t !== 'move') || cands[0];
     return { t: 'end' };
   }
@@ -2478,6 +2506,46 @@ function lpPile(st, seat, w) {
     <div class="pl-s" style="height:${Math.round(w * 1.42) + (n - 1) * off}px">${cards}${b ? `<span class="bb">${b}</span>` : ''}</div>
     <div class="mm">${done ? '✓ ' : ''}<b>${n}/${col.size}</b><span>${rentOfStack(st)}M</span></div></div>`;
 }
+function o3HTML(i, ow) {
+  const s = S(), p = s.players[i];
+  const kx = cb(() => openModal({ type: 'opp', seat: i }));
+  const gs = p.stacks.map(st => lpPile(st, i, ow)).join('') || '<span class="lp-empty">Henüz tapu yok</span>';
+  return `<section class="o3${s.turn === i ? ' turn' : ''}"><header data-k="${kx}" role="button" tabindex="0">
+    <span class="av">${esc((p.name || '?')[0].toUpperCase())}</span><b class="nm">${esc(p.name)}</b>${lpDots(p)}<span class="hc" title="Elindeki kart">🂠${p.hand.length}</span>
+    <span class="tot">${bankTotal(p)}M</span><span class="exp">⤢</span></header>${lpCoins(p, 'six')}
+    <div class="gs" data-sk="g${i}">${gs}</div></section>`;
+}
+// ---------- TELEFON DİK ----------
+function portHTML() {
+  const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
+  const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
+  const W = window.innerWidth, Hh = window.innerHeight;
+  const ow = Math.round(Math.max(44, Math.min(58, W * 0.13)));
+  const dots = [0, 1, 2].map(i => `<i class="${i < s.playsLeft ? 'on' : ''}"></i>`).join('');
+  const mine = s.turn === my;
+  let endBtn = '';
+  if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary e3" disabled>Önce oyna (7+ kart)</button>` : `<button class="primary e3" data-k="${cb(() => send({ t: 'end' }))}">Sırayı bitir</button>`;
+  const hdr = `<div class="h3"><span class="turnp${mine ? '' : ' other'}">${mine ? 'Sıra sende' : 'Sıra: ' + esc(s.players[s.turn].name)}</span><span class="dots">${dots}</span>
+    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}<span class="sp"></span>${endBtn}
+    <button class="ghost lp-menu" aria-label="Menü" data-k="${cb(() => openModal({ type: 'menu' }))}">≡</button></div>`;
+  const opps = `<div class="po3" data-sk="rail">${order.map(i => o3HTML(i, ow)).join('')}</div>`;
+  const showStatus = s.phase === 'over' || s.pending || s.phase === 'discard';
+  const st = showStatus ? `<p class="now">${statusHTML().replace(/<[^>]+>/g, ' ')}</p>` : '';
+  const feed = `<div class="f3" data-k="${cb(() => openModal({ type: 'log' }))}" role="button"><div class="deck"><em>${s.deck.length}</em></div><div class="fl">${st}${s.log.slice(-2).reverse().map(l => `<p>${esc(l)}</p>`).join('')}</div></div>`;
+  let table = '', hand = '';
+  if (!spectator) {
+    const p = me();
+    const mw = Math.round(Math.max(46, Math.min(64, W * 0.15)));
+    const gs = p.stacks.map(st2 => lpPile(st2, my, mw)).join('') || '<span class="lp-empty">Henüz tapu açmadın. Elinden bir tapuya dokun.</span>';
+    table = `<div class="t3 pm3"><div class="bankcol"><div class="tot">${bankTotal(p)}M</div>${lpCoins(p, 'm')}<div class="sets">${lpDots(p)} set</div></div><div class="gs" data-sk="gme">${gs}</div></div>`;
+    const k = p.hand.length, rw = W - 20;
+    const fit = Math.floor(rw / (1 + 0.6 * Math.max(0, k - 1)));
+    const cw = Math.round(Math.max(56, Math.min(104, Hh * 0.13, fit)));
+    const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
+    hand = `<div class="r-hand hand3 ph3hand" style="--cw:${cw}px;height:${Math.round(cw * 1.42) + 8}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
+  }
+  return `<div class="game pt3">${hdr}${opps}${feed}${table}${hand}</div>`;
+}
 function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
@@ -2592,6 +2660,7 @@ function gameHTML() {
   const s = S();
   if (!s) return `<div class="lobby"><h2>Yükleniyor…</h2></div>`;
   if (isLand()) return landHTML();
+  if (isPortraitPhone()) return portHTML();
   const n = s.players.length, my = app.mySeat;
   const spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
