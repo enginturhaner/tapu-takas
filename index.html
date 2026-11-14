@@ -636,6 +636,15 @@ html{overflow-x:hidden}
 .pr.jk span{color:#6b5a2a}
 .pr.bld{background:#eef6ef}
 .pr[disabled]{opacity:.45}
+.pay-cards{flex:1;min-height:0;overflow-y:auto;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;padding:4px 2px}
+.psec{background:rgba(0,0,0,.2);border-radius:10px;padding:4px 7px 7px;border-top:3px solid var(--c,#f8d08f);max-width:100%}
+.psec h4{margin:0 0 4px;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#e9d8b0;white-space:nowrap}
+.psec .pcs{display:flex;flex-wrap:wrap;gap:5px}
+.pay-cards .card{--w:var(--cw)}
+.pay-cards .card.sel{outline:3px solid var(--gold);outline-offset:1px;transform:translateY(-3px)}
+.pay-cards .pc.dis{opacity:.45}
+.pay-cards .pc{position:relative}
+.pay-cards .pc.on::after{content:"✓";position:absolute;right:-5px;top:-7px;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#2a1d00;font-weight:900;font-size:13px;line-height:22px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.45);z-index:6}
 
 </style></head><body><div id="app"></div>
 <script>
@@ -1773,6 +1782,7 @@ function render() {
   if (app._lastView !== app.view) { try { window.scrollTo(0, 0); } catch (e) {} app._lastView = app.view; }
   $root.innerHTML = html;
   const lb = $root.querySelector('.logbox'); if (lb) lb.scrollTop = 0;
+  const pcw = $root.querySelector('.pay-cards'); if (pcw) { let w = parseInt(pcw.style.getPropertyValue('--cw')) || 80; while (pcw.scrollHeight > pcw.clientHeight + 1 && w > 46) { w -= 3; pcw.style.setProperty('--cw', w + 'px'); } }
   $root.querySelectorAll('[data-sk]').forEach(el => { const v = keep[el.dataset.sk]; if (v) { el.scrollLeft = v[0]; el.scrollTop = v[1]; } });
   if (app.view === 'game' && S()) {
     const n = S().last ? S().last.n : 0;
@@ -1973,26 +1983,41 @@ function payLand() {
   const valid = sum >= pd.amount || sum >= total;
   const toggle = id => cb(() => { sel.has(id) ? sel.delete(id) : sel.add(id); render(); });
   const jsn = p.hand.filter(id => Engine.isAct(id, 'jsn')).length;
-  const bank = p.bank.slice().sort((a, b) => C(a).v - C(b).v).map(id => {
-    const c = C(id), v = c.v, nm = c.k === 'money' ? 'MİLYON' : (c.k === 'act' ? Engine.ACTS[c.a].name : c.k === 'rent' ? 'Kira' : 'Kart');
-    return `<button class="pb${sel.has(id) ? ' on' : ''}" style="--m:${MONEY_TINT[v] || '#eee'};--d:${MONEY_INK[v] || '#333'}" data-k="${toggle(id)}"><b>${v}M</b><small>${esc(nm)}</small></button>`;
-  }).join('');
-  const table = p.stacks.map(st => {
-    const col = COLORS[st.color], done = Engine.complete(st);
-    const rows = st.cards.map(id => {
-      const c = C(id), v = c.v, can = v > 0;
-      return `<button class="pr${sel.has(id) ? ' on' : ''}${c.k === 'wild' ? ' jk' : ''}" ${can ? `data-k="${toggle(id)}"` : 'disabled'}><span>${esc(c.k === 'wild' ? '⇅ Joker' : c.name)}</span><b>${v}M</b></button>`;
-    }).join('') + [['house', 'Ev'], ['hotel', 'Otel']].filter(([f]) => st[f] != null).map(([f, nm]) => `<button class="pr bld${sel.has(st[f]) ? ' on' : ''}" data-k="${toggle(st[f])}"><span>${nm}</span><b>${C(st[f]).v}M</b></button>`).join('');
-    return `<div class="pg${done ? ' full' : ''}" style="--c:${col.hex};--k:${col.ink}"><div class="ph">${col.n}${done ? ' ✓' : ''}</div>${rows}</div>`;
-  }).join('');
+  // bölümler: banka + her renk grubu; kartlar gerçek kart olarak, ekrana sığacak boyda
+  const secs = [];
+  const bk = p.bank.slice().sort((a, b) => C(a).v - C(b).v);
+  if (bk.length) secs.push({ label: `Banka ${bankTotal(p)}M`, cls: 'bank', cards: bk.map(id => ({ id })) });
+  p.stacks.forEach(st => {
+    const col = COLORS[st.color];
+    const cards = st.cards.map(id => ({ id, color: st.color, dis: !(C(id).v > 0) }));
+    if (st.house != null) cards.push({ id: st.house }); if (st.hotel != null) cards.push({ id: st.hotel });
+    secs.push({ label: `${col.n} ${st.cards.length}/${col.size}${Engine.complete(st) ? ' ✓' : ''}`, hex: col.hex, cards });
+  });
+  const availW = window.innerWidth - 44, availH = window.innerHeight - 88, GAP = 5, PAD = 16, LBL = 34;
+  const fits = cw => {
+    let x = 0, lines = 1;
+    for (const sec of secs) {
+      let w = sec.cards.length * cw + (sec.cards.length - 1) * GAP + PAD;
+      while (w > availW) { // bölüm satıra sığmazsa kırılır
+        if (x > 0) { lines++; x = 0; }
+        const per = Math.max(1, Math.floor((availW - PAD + GAP) / (cw + GAP)));
+        w -= per * (cw + GAP); lines++;
+      }
+      if (x > 0 && x + w + 8 > availW) { lines++; x = 0; }
+      x += w + 8;
+    }
+    return lines * (cw * 1.42 + LBL + 10) <= availH;
+  };
+  let cw = 112; while (cw > 46 && !fits(cw)) cw -= 2;
+  const body = secs.map(sec => `<section class="psec ${sec.cls || ''}" style="${sec.hex ? `--c:${sec.hex}` : ''}"><h4>${esc(sec.label)}</h4><div class="pcs">${sec.cards.map(o =>
+    `<div class="pc${o.dis ? ' dis' : ''}${sel.has(o.id) ? ' on' : ''}">${cardHTML(o.id, { color: o.color, k: o.dis ? null : toggle(o.id), sel: sel.has(o.id) })}</div>`).join('')}</div></section>`).join('') || '<span class="muted">Ödeyecek bir şeyin yok.</span>';
   const pct = Math.min(100, Math.round(100 * sum / Math.max(1, Math.min(pd.amount, total))));
   const kAuto = cb(() => { app.ui.sel = new Set(Bot.choosePayment(p, pd.amount)); render(); });
   const kPay = cb(() => send({ t: 'pay', cards: [...sel] }));
   return `<div class="pay-top"><div class="pt"><b>${describePending(s)}</b>
       <div class="meter"><i style="width:${pct}%"></i><span>Seçilen <b>${sum}M</b> / borç <b>${pd.amount}M</b>${total < pd.amount ? ` · varlığın ${total}M, hepsini vermelisin` : ' · para üstü verilmez'}</span></div></div>
     <div class="pa">${jsn ? `<button class="danger" data-k="${cb(() => send({ t: 'jsn' }))}">✋ Reddet (${jsn})</button>` : ''}<button data-k="${kAuto}">Otomatik</button><button class="primary" ${valid ? '' : 'disabled'} data-k="${kPay}">${sum ? `${sum}M öde` : 'Öde'}</button></div></div>
-    <div class="pay-body"><section class="pbank"><h4>Banka <span>${bankTotal(p)}M</span></h4><div class="pbs">${bank || '<span class="muted">boş</span>'}</div></section>
-    <section class="ptable"><h4>Masa <span>${propValue(p)}M</span></h4><div class="pgs">${table || '<span class="muted">boş</span>'}</div></section></div>`;
+    <div class="pay-cards" style="--cw:${cw}px" data-sk="paycards">${body}</div>`;
 }
 function oppModal(m) {
   const s = S(), my = app.mySeat, n = s.players.length;
