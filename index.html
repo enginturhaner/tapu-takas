@@ -850,6 +850,17 @@ html{background:#0f442f}
 .turnban{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);z-index:120;pointer-events:none;background:linear-gradient(180deg,#ffe07a,#f2b72f);color:#2b1d00;font-weight:900;font-size:clamp(26px,6vmin,46px);letter-spacing:.02em;padding:.45em 1.1em;border-radius:999px;border:3px solid #fff3c4;box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 0 8px rgba(255,216,90,.25);animation:turnban 1.9s ease forwards}
 @keyframes turnban{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.96)}}
 
+/* oyun sonu: ortada kart, her ekranda butonlar görünür */
+.veil.over:not([style]){top:0;bottom:0;height:auto !important;}
+.veil.over{align-items:center !important;padding:calc(var(--topsafe) + 12px) 14px calc(env(safe-area-inset-bottom) + 14px) !important}
+.veil.over .modal{border-radius:18px !important;max-height:100% !important;max-width:520px;padding:18px 16px !important;gap:12px}
+.veil.over .win{font-size:clamp(26px,8vw,36px);line-height:1.15}
+.veil.over .row{flex-wrap:wrap}
+.rmnote{text-align:center;font-weight:700;color:#f4efe2}
+.rmlist{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.rmlist span{background:rgba(255,255,255,.08);border-radius:99px;padding:4px 10px;font-size:13px;color:#cfe3d6}
+.rmlist span.ok{background:rgba(255,216,90,.18);color:var(--gold);font-weight:700}
+
 </style></head><body><div id="app"></div>
 <script>
 // ===== DİL (Türkçe / English) =====
@@ -1071,6 +1082,10 @@ const TX_RULES = [
   [/(\d+)\. turda (\d+) tam set tamamlandı\./g, '$2 full sets completed on turn $1.'],
   [new RegExp('🏆 ' + TXN + ' (\\d+) tam set topladı ve KAZANDI!', 'g'), '🏆 $1 collected $2 full sets and WON!'],
   [new RegExp('🏆 ' + TXN + ' kazandı!', 'g'), '🏆 $1 wins!'],
+  [new RegExp(TXN + ' yeniden oynamak istiyor\\.', 'g'), '$1 wants to play again.'],
+  [new RegExp(TXN + ' yeniden oynamak istemedi\\.', 'g'), "$1 doesn't want to play again."],
+  ['Yeniden oyna isteği gönderildi. Herkes onaylayınca yeni oyun başlar.', 'Play-again request sent. The new game starts when everyone accepts.'],
+  ['>Evet, oynayalım<', ">Yes, let's play<"], ['>Hayır<', '>No<'],
   [/Oyun başladı! (\d+) tam set toplayan kazanır/g, 'Game started! First to $1 full sets wins'],
   [new RegExp('▶ ' + TXN + ' sırasına başladı, (\\d+) kart çekti\\.', 'g'), '▶ $1 started their turn and drew $2 cards.'],
   [new RegExp(TXN + ' elinde 7 kart kalana kadar kart atmalı\\.', 'g'), '$1 must discard down to 7 cards.'],
@@ -3026,7 +3041,7 @@ function modalHTML() {
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
   const fab = (m.type === 'respond' || m.type === 'discard') ? `<button class="minfab" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}">▾ Masaya bak</button>` : '';
   const vz = app.view === 'game' && isLand() && landZoom() > 1 ? (() => { const z = landZoom(); return ` style="zoom:${z.toFixed(3)};width:${(innerWidth / z).toFixed(1)}px;height:${(innerHeight / z).toFixed(1)}px;right:auto;bottom:auto"`; })() : '';
-  return pill + fab + `<div class="veil"${vz} data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
+  return pill + fab + `<div class="veil${m.type === 'over' ? ' over' : ''}"${vz} data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
@@ -3036,14 +3051,30 @@ function optBtn(label, sub, fn, cls = '', dis = false) {
 const cancelBtn = () => `<div class="row"><button class="ghost" data-k="${cb(closeModal)}">Vazgeç</button></div>`;
 const playThen = a => () => { app.ui.modal = null; send(a); };
 
+
+function rematchSend(t) {
+  if (app.local) { if (t === 'rematch') { app.ui.modal = null; startLocal(); } return; }
+  if (app.isHost) { rematchAct(app.mySeat, { t }); return; }
+  netSend({ t });
+}
+function overModal() {
+  const s = S(), rm = s.rematch, my = app.mySeat;
+  const home = `<button data-k="${cb(() => { app.ui.modal = null; goHome(); })}">Ana sayfa</button>`;
+  const head = `<div class="win">🏆 ${pname(s.winner)} kazandı!</div><div class="muted" style="text-align:center">${s.turnNo}. turda ${s.target || 3} tam set tamamlandı.</div>`;
+  const ask = `<button class="primary" data-k="${cb(() => rematchSend('rematch'))}">Yeniden oyna</button>`;
+  if (my < 0) return head + `<div class="row" style="justify-content:center">${home}</div>`;
+  if (!rm || app.local) return head + `<div class="row" style="justify-content:center">${ask}${home}</div>`;
+  if (rm.no >= 0) return head + `<div class="rmnote">${esc(s.players[rm.no].name)} yeniden oynamak istemedi.</div><div class="row" style="justify-content:center">${ask}${home}</div>`;
+  const list = `<div class="rmlist">${s.players.map((p, i) => `<span class="${rm.yes.includes(i) ? 'ok' : ''}">${rm.yes.includes(i) ? '✓' : '…'} ${esc(p.name)}</span>`).join('')}</div>`;
+  if (rm.yes.includes(my)) return head + `<div class="rmnote">Yeniden oyna isteği gönderildi. Herkes onaylayınca yeni oyun başlar.</div>${list}<div class="row" style="justify-content:center">${home}</div>`;
+  return head + `<div class="rmnote">${esc(s.players[rm.by].name)} yeniden oynamak istiyor.</div>${list}<div class="row" style="justify-content:center">
+    <button class="primary" data-k="${cb(() => rematchSend('rematch'))}">Evet, oynayalım</button><button data-k="${cb(() => rematchSend('rematchNo'))}">Hayır</button></div>`;
+}
+
 function renderModal(m) {
   const s = S();
   if (m.type === 'rules') return `<h3>Kurallar</h3>${homeRules()}<div class="row"><button class="primary" data-k="${cb(closeModal)}">Tamam</button></div>`;
-  if (m.type === 'over') {
-    const kAgain = cb(() => { app.ui.modal = null; app.local ? startLocal() : hostRestart(); });
-    return `<div class="win">🏆 ${pname(s.winner)} kazandı!</div><div class="muted" style="text-align:center">${s.turnNo}. turda ${s.target || 3} tam set tamamlandı.</div>
-      <div class="row" style="justify-content:center">${app.local || app.isHost ? `<button class="primary" data-k="${kAgain}">Yeniden oyna</button>` : ''}<button data-k="${cb(() => { app.ui.modal = null; goHome(); })}">Ana sayfa</button></div>`;
-  }
+  if (m.type === 'over') return overModal();
   if (m.type === 'respond') { const pd = s.pending; if (pd && pd.stage !== 'actor' && pd.kind !== 'steal') return payLand(); return respondModal(); }
   if (m.type === 'discard') return discardModal();
   if (m.type === 'move') return moveModal(m);
@@ -3343,6 +3374,7 @@ function handleRemote(uid, a) {
   if (!H.state) return;
   const seat = H.state.players.findIndex(p => p.uid === uid);
   if (seat < 0) return;
+  if (a.t === 'rematch' || a.t === 'rematchNo') { rematchAct(seat, a); return; }
   const r = applyAuth(seat, a);
   if (!r.ok) writeGame({ notice: { uid, msg: r.err, n: noticeN++ + Date.now() } });
 }
@@ -3375,6 +3407,23 @@ function hostRestart() {
   writeGame({ status: 'playing', state: H.state }); render(); scheduleBots();
 }
 
+
+// yeniden oyna: herkes isteyebilir, tüm oyuncular onaylayınca başlar
+function rematchAct(seat, a) {
+  const s = H.state; if (!s || s.phase !== 'over') return;
+  const st = clone(s), n = st.players.length;
+  if (a.t === 'rematch') {
+    if (!st.rematch || st.rematch.no >= 0) st.rematch = { by: seat, yes: st.players.map((p, i) => p.bot ? i : -1).filter(i => i >= 0), no: -1 };
+    if (!st.rematch.yes.includes(seat)) st.rematch.yes.push(seat);
+  } else {
+    if (!st.rematch || st.rematch.no >= 0) return;
+    st.rematch.no = seat;
+  }
+  st.v = (st.v || 0) + 1;
+  H.state = st; app.state = st;
+  if (st.rematch.no < 0 && st.rematch.yes.length >= n) { hostRestart(); return; }
+  writeGame({ state: st }); render();
+}
 
 // ---------- ONLINE (eşler arası bağlantı: sunucusuz, kurucunun tarayıcısı hakem) ----------
 window.NET_MODE = 'p2p';
