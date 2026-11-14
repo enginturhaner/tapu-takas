@@ -646,6 +646,66 @@ html{overflow-x:hidden}
 .pay-cards .pc{position:relative}
 .pay-cards .pc.on::after{content:"✓";position:absolute;right:-5px;top:-7px;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#2a1d00;font-weight:900;font-size:13px;line-height:22px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.45);z-index:6}
 
+/* ===== TELEFON YATAY v3: solda geniş rakipler (gerçek kartlar), sağda masan + akış + el ===== */
+.game.lp3{position:fixed;inset:0;overflow:hidden;display:flex;box-shadow:none;height:auto;min-height:0;gap:0;padding:0 !important;
+  background:radial-gradient(ellipse 70% 80% at 70% 40%,#1d7050 0%,#155a40 50%,#0f442f 100%)}
+.l3{flex:0 0 50%;background:rgba(0,0,0,.28);border-right:1px solid rgba(255,255,255,.08);padding:6px 8px 6px max(8px, env(safe-area-inset-left));
+  display:flex;flex-direction:column;gap:6px;overflow-y:auto;scrollbar-width:none}
+.l3::-webkit-scrollbar{display:none}
+.o3{flex:1 0 auto;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);padding:5px 7px 4px;display:flex;flex-direction:column;gap:4px;min-height:0}
+.o3.turn{border-color:var(--gold);box-shadow:0 0 0 1.5px var(--gold)}
+.o3 header{display:flex;align-items:center;gap:6px;cursor:pointer;min-height:24px}
+.o3 .av{width:22px;height:22px;border-radius:50%;background:#3b2412;border:2px solid #e9d8b0;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex:0 0 auto}
+.o3 .nm{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px}
+.o3 .hc{font-size:10.5px;font-weight:700;color:#cfe3d6;white-space:nowrap}
+.o3 .lp-co.six{max-width:170px;margin-left:auto}
+.o3 .tot{font-weight:800;font-size:13px;color:#f8d08f;white-space:nowrap}
+.o3 .exp{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#e9d8b0;flex:0 0 auto}
+.o3 .gs,.t3 .gs{gap:8px;padding-top:3px;padding-bottom:2px}
+.pile3{flex:0 0 var(--w);display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.pile3 .pl-s{position:relative;width:var(--w)}
+.pile3 .pl-c{position:absolute;left:0}
+.pile3 .card{--w:inherit;width:var(--w)}
+.pile3.full .pl-s{filter:drop-shadow(0 0 3px rgba(245,197,24,.95))}
+.pile3 .bb{position:absolute;right:-5px;bottom:-5px;display:flex;gap:2px;z-index:20}
+.pile3 .hb{font-style:normal;width:17px;height:17px;border-radius:5px;background:#2e8b57;border:1.5px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pile3 .hb svg{width:12px;height:12px}.pile3 .hb.ht{background:#b5382b}
+.pile3 .mm{align-self:flex-start;display:inline-flex;gap:4px;align-items:center;font-weight:800;font-size:9.5px;line-height:1;background:rgba(0,0,0,.4);color:#fff;border-radius:99px;padding:2px 6px 2px 5px;white-space:nowrap}
+.pile3 .mm span{color:#f8d08f}
+.pile3.full .mm{background:var(--gold);color:#2a1d00}.pile3.full .mm span{color:#5a3d00}
+.m3{flex:1;min-width:0;display:flex;flex-direction:column;padding:6px max(10px, env(safe-area-inset-right)) 0 10px;gap:5px;position:relative}
+.h3{display:flex;align-items:center;gap:8px;min-height:32px}
+.h3 .turnp{background:var(--gold);color:#2a1d00;font-weight:800;font-size:12px;border-radius:99px;padding:4px 10px;white-space:nowrap}
+.h3 .turnp.other{background:rgba(255,255,255,.12);color:#f4efe2}
+.h3 .dots{display:inline-flex;gap:4px}
+.h3 .dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--gold);display:inline-block;background:none}
+.h3 .dots i.on{background:var(--gold)}
+.h3 .sp{flex:1}
+.h3 .lp-menu{position:static;flex:0 0 auto}
+.e3{min-height:34px;padding:4px 12px;font-size:13px;border-radius:10px;box-shadow:0 2px 0 #a07f00}
+.e3[disabled]{font-size:11px}
+.t3{display:flex;gap:10px;align-items:flex-start;flex:0 0 auto}
+.t3 .bankcol{flex:0 0 auto;display:flex;flex-direction:column;gap:4px}
+.t3 .bankcol .tot{font-family:var(--display);font-size:18px;line-height:1;color:#f8d08f}
+.t3 .bankcol .sets{font-size:10px;font-weight:700;color:#cfe3d6;display:flex;gap:5px;align-items:center}
+.t3 .lp-co.m{width:96px}
+.t3 .gs{flex:1}
+.f3{display:flex;gap:8px;align-items:center;flex:0 0 auto;cursor:pointer;background:rgba(0,0,0,.2);border-radius:10px;padding:4px 8px}
+.f3 .deck{width:24px;height:34px;border-radius:4px;background:repeating-linear-gradient(45deg,#8c1f1f 0 3px,#a32b2b 3px 6px);border:1.5px solid #f3d9a8;position:relative;flex:0 0 auto}
+.f3 .deck em{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-style:normal;background:#111;color:#fff;font-size:8.5px;font-weight:800;border-radius:99px;padding:0 4px}
+.f3 .fl{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.f3 p{margin:0;font-size:10.5px;line-height:1.25;color:#cfe3d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f3 p:first-child{color:#fff}
+.f3 p.now{color:var(--gold);font-weight:700}
+.hand3 .row{right:0}
+/* ödeme sayfası her ekranda */
+@media (min-height:521px) and (min-width:721px){
+  .veil:has(.modal.sheet){padding:20px}
+  .modal.sheet{max-width:1100px;height:auto;max-height:min(760px, 100%);border-radius:18px}
+}
+@media (max-width:720px){ .veil:has(.modal.sheet){padding:0;align-items:stretch} .pay-top{flex-wrap:wrap} }
+@media (max-width:720px){ .pay-top .pt > b{white-space:normal} }
+
 </style></head><body><div id="app"></div>
 <script>
 // ===== OYUN MOTORU: Monopoly Deal kuralları (+ ev kuralı: yerdeki tapuyu başka renge taşımak 1 hamle) =====
@@ -1932,49 +1992,55 @@ function lpOpp(i) {
     <span class="hc" title="Elindeki kart">🂠${p.hand.length}</span><span class="tot">${bankTotal(p)}M</span><span class="exp" aria-label="Tamamını aç">⤢</span></header>
     <div class="ob">${lpCoins(p)}<div class="gs" data-sk="g${i}">${gs}</div></div></section>`;
 }
+function lpPile(st, seat, w) {
+  const col = COLORS[st.color], n = st.cards.length, done = Engine.complete(st), off = Math.round(w * 0.44);
+  const cards = st.cards.map((id, i) => `<div class="pl-c" style="top:${i * off}px">${cardHTML(id, { color: st.color })}</div>`).join('');
+  const b = (st.house != null ? `<em class="hb" title="Ev">${icon('house')}</em>` : '') + (st.hotel != null ? `<em class="hb ht" title="Otel">${icon('hotel')}</em>` : '');
+  const k = cb(() => openModal({ type: 'set', sid: st.sid, seat }));
+  return `<div class="pile3${done ? ' full' : ''}" style="--w:${w}px" data-k="${k}" role="button" tabindex="0" title="${col.n} ${n}/${col.size}">
+    <div class="pl-s" style="height:${Math.round(w * 1.42) + (n - 1) * off}px">${cards}${b ? `<span class="bb">${b}</span>` : ''}</div>
+    <div class="mm">${done ? '✓ ' : ''}<b>${n}/${col.size}</b><span>${rentOfStack(st)}M</span></div></div>`;
+}
 function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
   const W = window.innerWidth, Hh = window.innerHeight;
-  // sol ray: rakipler
+  const ow = Math.round(Math.max(46, Math.min(66, Hh * 0.155)));
+  // SOL: rakipler (geniş, gerçek kartlar)
   const opps = order.map(i => {
     const p = s.players[i];
     const kx = cb(() => openModal({ type: 'opp', seat: i }));
-    const gs = p.stacks.map(st => lpGrp(st, i)).join('') || '<span class="lp-empty">Tapu yok</span>';
-    return `<section class="r-op${s.turn === i ? ' turn' : ''}"><header data-k="${kx}" role="button" tabindex="0">
-      <span class="av">${esc((p.name || '?')[0].toUpperCase())}</span><b class="nm">${esc(p.name)}</b>${lpDots(p)}<span class="hc" title="Elindeki kart">🂠${p.hand.length}</span><span class="exp">⤢</span></header>
-      <div class="r2">${lpCoins(p, 'six')}<span class="tot">${bankTotal(p)}M</span></div>
+    const gs = p.stacks.map(st => lpPile(st, i, ow)).join('') || '<span class="lp-empty">Henüz tapu yok</span>';
+    return `<section class="o3${s.turn === i ? ' turn' : ''}"><header data-k="${kx}" role="button" tabindex="0">
+      <span class="av">${esc((p.name || '?')[0].toUpperCase())}</span><b class="nm">${esc(p.name)}</b>${lpDots(p)}<span class="hc" title="Elindeki kart">🂠${p.hand.length}</span>
+      ${lpCoins(p, 'six')}<span class="tot">${bankTotal(p)}M</span><span class="exp">⤢</span></header>
       <div class="gs" data-sk="g${i}">${gs}</div></section>`;
   }).join('');
-  const feed = s.log.slice(-3).reverse().map(l => `<p>${esc(l)}</p>`).join('');
-  const rail = `<aside class="r-rail" data-sk="rail">${opps}<div class="r-feed" data-k="${cb(() => openModal({ type: 'log' }))}" role="button">${feed}</div></aside>`;
-  // üst satır
+  const left = `<aside class="l3" data-sk="rail">${opps}</aside>`;
+  // SAĞ: başlık + masan + akış + el
   const dots = [0, 1, 2].map(i => `<i class="${i < s.playsLeft ? 'on' : ''}"></i>`).join('');
   const mine = s.turn === my;
-  const showStatus = s.phase === 'over' || s.pending || s.phase === 'discard';
-  const hdr = `<div class="r-hdr"><span class="turnp${mine ? '' : ' other'}">${mine ? 'Sıra sende' : 'Sıra: ' + esc(s.players[s.turn].name)}</span>
-    <span class="dots">${dots}</span><span class="r-msg">${showStatus ? statusHTML().replace(/<[^>]+>/g, ' ') : (mine ? `${s.playsLeft} hamle kaldı` : (s.last ? lastText(s.last) : ''))}</span>
-    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}
+  let endBtn = '';
+  if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary e3" disabled>Önce oyna (7+ kart)</button>` : `<button class="primary e3" data-k="${cb(() => send({ t: 'end' }))}">Sırayı bitir</button>`;
+  const hdr = `<div class="h3"><span class="turnp${mine ? '' : ' other'}">${mine ? 'Sıra sende' : 'Sıra: ' + esc(s.players[s.turn].name)}</span><span class="dots">${dots}</span>
+    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}<span class="sp"></span>${endBtn}
     <button class="ghost lp-menu" aria-label="Menü" data-k="${cb(() => openModal({ type: 'menu' }))}">≡</button></div>`;
-  // masa
-  const top1 = s.discard.length ? s.discard[s.discard.length - 1] : null;
-  const center = `<div class="r-center"><div class="piles"><div class="deck"></div>${top1 != null ? `<div class="disc">${cardHTML(top1)}</div>` : '<div class="disc empty"></div>'}</div><span>Deste ${s.deck.length}</span></div>`;
+  const showStatus = s.phase === 'over' || s.pending || s.phase === 'discard';
+  const st = showStatus ? `<p class="now">${statusHTML().replace(/<[^>]+>/g, ' ')}</p>` : '';
+  const feed = `<div class="f3" data-k="${cb(() => openModal({ type: 'log' }))}" role="button"><div class="deck"><em>${s.deck.length}</em></div><div class="fl">${st}${s.log.slice(-3).reverse().map(l => `<p>${esc(l)}</p>`).join('')}</div></div>`;
   let table = '', hand = '';
   if (!spectator) {
     const p = me();
-    const gs = p.stacks.map(st => lpGrp(st, my)).join('') || '<span class="lp-empty">Henüz tapu açmadın. Elinden bir tapuya dokun.</span>';
-    table = `<div class="r-table"><div class="bankcol"><div class="tot">${bankTotal(p)}M</div>${lpCoins(p, 'm')}<div class="sets">${lpDots(p)} set</div></div><div class="gs gme" data-sk="gme">${gs}</div>${center}</div>`;
+    const mw = Math.round(Math.max(48, Math.min(70, Hh * 0.15)));
+    const gs = p.stacks.map(st => lpPile(st, my, mw)).join('') || '<span class="lp-empty">Henüz tapu açmadın. Elinden bir tapuya dokun.</span>';
+    table = `<div class="t3"><div class="bankcol"><div class="tot">${bankTotal(p)}M</div>${lpCoins(p, 'm')}<div class="sets">${lpDots(p)} set</div></div><div class="gs" data-sk="gme">${gs}</div></div>`;
     const k = p.hand.length;
-    const endW = 112;
-    const cw = Math.round(Math.max(56, Math.min(118, Hh * 0.29)));
-    const avail = W - 230 - endW - 30;
-    const gap = k > 1 ? Math.round(Math.max(-cw * 0.74, Math.min(6, (avail - cw * k) / (k - 1)))) : 0;
-    let endBtn;
-    if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary r-end" disabled>7'den fazla kart:<br>önce oyna</button>` : `<button class="primary r-end" data-k="${cb(() => send({ t: 'end' }))}">Sırayı<br>bitir</button>`;
-    else endBtn = `<div class="r-end wait">Sıra<br><b>${esc(s.players[s.turn].name)}</b></div>`;
-    hand = `<div class="r-hand" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div>${endBtn}</div>`;
-  } else table = `<div class="r-table">${center}</div>`;
-  return `<div class="game lp2">${rail}<main class="r-main">${hdr}${table}${hand}</main></div>`;
+    const rw = W * 0.5 - 20;
+    const cw = Math.round(Math.max(56, Math.min(108, Hh * 0.27)));
+    const gap = k > 1 ? Math.round(Math.max(-cw * 0.76, Math.min(6, (rw - cw * k) / (k - 1)))) : 0;
+    hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
+  }
+  return `<div class="game lp3">${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
 }
 function payLand() {
   const s = S(), pd = s.pending, p = me(), sel = app.ui.sel;
@@ -2224,7 +2290,7 @@ function modalHTML() {
   try { body = renderModal(m); } catch (e) { console.error(e); body = '<h3>Bir hata oluştu</h3>'; }
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
-  return `<div class="veil" data-k="${kClose}"><div class="modal${isLand() && m.type === 'respond' && S() && S().pending && S().pending.stage !== 'actor' && S().pending.kind !== 'steal' ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
+  return `<div class="veil" data-k="${kClose}"><div class="modal${m.type === 'respond' && S() && S().pending && S().pending.stage !== 'actor' && S().pending.kind !== 'steal' ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
@@ -2242,7 +2308,7 @@ function renderModal(m) {
     return `<div class="win">🏆 ${pname(s.winner)} kazandı!</div><div class="muted" style="text-align:center">${s.turnNo}. turda ${s.target || 3} tam set tamamlandı.</div>
       <div class="row" style="justify-content:center">${app.local || app.isHost ? `<button class="primary" data-k="${kAgain}">Yeniden oyna</button>` : ''}<button data-k="${cb(() => { app.ui.modal = null; goHome(); })}">Ana sayfa</button></div>`;
   }
-  if (m.type === 'respond') { const pd = s.pending; if (isLand() && pd && pd.stage !== 'actor' && pd.kind !== 'steal') return payLand(); return respondModal(); }
+  if (m.type === 'respond') { const pd = s.pending; if (pd && pd.stage !== 'actor' && pd.kind !== 'steal') return payLand(); return respondModal(); }
   if (m.type === 'discard') return discardModal();
   if (m.type === 'move') return moveModal(m);
   if (m.type === 'set') return setModal(m);
