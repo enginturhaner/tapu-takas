@@ -807,9 +807,327 @@ html{overflow-x:hidden}
 .minfab{position:fixed;z-index:70;left:max(10px, env(safe-area-inset-left));bottom:max(10px, env(safe-area-inset-bottom));min-height:44px;padding:8px 16px;border-radius:14px;
   background:#2a1d00;color:var(--gold);border:2px solid var(--gold);font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.55)}
 .modal.sheet .pay-cards{padding-bottom:58px}
+.hero .langsw{position:absolute;top:12px;right:12px;z-index:3}
+.hero .langsw button{min-height:30px;padding:4px 10px;font-size:12.5px}
+@media (max-width:560px){ .hero .langsw{position:static;align-self:flex-end;margin-bottom:-6px} }
+.hero .fan{margin-top:34px}
 
 </style></head><body><div id="app"></div>
 <script>
+// ===== DİL (Türkçe / English) =====
+// Oyun metinleri Türkçe yazılı; İngilizce seçilince ekrana basılmadan önce bu tabloyla çevrilir.
+let LANG = (() => { try { return localStorage.getItem('td_lang') || 'tr'; } catch (e) { return 'tr'; } })();
+function setLang(l) { LANG = l; try { localStorage.setItem('td_lang', l); } catch (e) {} try { document.documentElement.lang = l; } catch (e) {} }
+try { document.documentElement.lang = LANG; } catch (e) {}
+
+const TXN = '([^<>"]+?)'; // isim / serbest metin
+const TXC = '((?:Açık )?[A-Za-zÇĞİÖŞÜçğıöşü]+)'; // renk adı (Açık Mavi dahil)
+const TX_RULES = [
+  // ---- uzun cümleler (ana sayfa, kurallar, uyarılar) ----
+  ['Arkadaşlarınla online kart oyunu. Tapuları topla, kira iste, setleri kap. Seçilen sayıda tam set toplayan kazanır.', 'An online card game for you and your friends. Collect properties, charge rent, steal sets. First to the chosen number of full sets wins.'],
+  ['Online oyun bu görünümde çalışmıyor (giriş yapılmamış ya da sayfa sohbet önizlemesinde açık). Sayfayı claude.ai bağlantısından açınca online oynayabilirsin. Botlarla deneme her yerde çalışır.', 'Online play does not work in this view (not signed in, or opened in the chat preview). Open the page from its claude.ai link to play online. Bot games work everywhere.'],
+  ['Bağlantı aracı yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile. Botlarla deneme yine de çalışır.', 'The connection library could not load. Check your internet connection and refresh. Bot games still work.'],
+  ['Bu sayfada oyun kurma/katılma iznin yok. Sayfanın sahibi seni <b>Düzenleyici (Editor)</b> olarak davet etmeli.', 'You do not have permission to create or join games on this page. The owner must invite you as an <b>Editor</b>.'],
+  ['Oyun kurunca çıkan bağlantıyı arkadaşlarına gönder; açıp adlarını yazarak katılırlar. Ayarları lobide seçersin.', 'Create a game and send the link to your friends; they open it, type their name and join. You choose the settings in the lobby.'],
+  ['Bir oyun kur, arkadaşların burada görsün. Ayarları lobide seçersin.', 'Create a game and your friends will see it here. You choose the settings in the lobby.'],
+  ['Sıran gelince <b>2 kart</b> çekersin (elin boşsa 5). Sıra başına <b>en fazla 3 kart</b> oynarsın.', 'On your turn you draw <b>2 cards</b> (5 if your hand is empty). You play <b>up to 3 cards</b> per turn.'],
+  ['Kartı tıkla: <b>bankaya koy</b> (para olarak), <b>tapu olarak aç</b> ya da <b>aksiyon olarak oyna</b>.', 'Tap a card to <b>bank it</b> (as money), <b>play it as a property</b> or <b>play it as an action</b>.'],
+  ['Ödeme yaparken para üstü verilmez; banka ve masandaki kartlarla ödersin, elindekilerle değil.', 'No change is given when paying; you pay with your bank and table cards, never from your hand.'],
+  ['<b>Reddet</b> sana yapılan hamleyi iptal eder; karşı taraf da Reddet ile karşılık verebilir.', '<b>Just Say No</b> cancels a move against you; the other side can answer with another Just Say No.'],
+  ["Sıra sonunda elinde en fazla <b>7 kart</b> kalır. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin.", 'At the end of your turn you may hold at most <b>7 cards</b>. With more than 7 cards you cannot end your turn before using all your moves.'],
+  ['<b>Ev kuralımız:</b> tam bir setten joker çıkarıp seti bozmak <b>1 hamle</b> sayılır. Henüz set olmamış bir gruptaki jokerin rengini ücretsiz değiştirebilirsin.', '<b>House rule:</b> breaking a full set by moving a wildcard out costs <b>1 move</b>. Moving a wildcard in an incomplete group is free.'],
+  ["Sadece Renkli Joker'den oluşan bir yığın için kira istenemez. Setten kart çıkınca aynı renkte boşta duran tapun otomatik sete geçer. Set yine de bozulursa ev ve otel bankana <b>para olarak</b> geçer.", 'You cannot charge rent for a pile made only of Multi-color Wildcards. When a card leaves a set, a loose property of the same color fills it automatically. If the set still breaks, the house and hotel go to your bank <b>as money</b>.'],
+  ['<b>Kazanmak:</b> seçilen sayıda (varsayılan 3) tam set. Ev kuralı: aynı renkten ikinci bir tam set de sayılır (oyun kurulurken değiştirilebilir).', '<b>Winning:</b> the chosen number (default 3) of full sets. House rule: a second full set of the same color also counts (changeable when setting up).'],
+  ["<b>Sıra:</b> 2 kart çek (el boşsa 5), en fazla 3 kart oyna, sonunda en fazla 7 kart tut. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin.", '<b>Turn:</b> draw 2 (5 if your hand is empty), play up to 3 cards, keep at most 7 at the end. With more than 7 cards you cannot end your turn before using all your moves.'],
+  ['<b>Para/Aksiyon:</b> aksiyon kartlarını para olarak bankaya koyabilirsin; tapular bankaya konamaz.', '<b>Money/Actions:</b> action cards can be banked as money; properties cannot be banked.'],
+  ['<b>Ödeme:</b> banka ve masandan; para üstü yok. Yetmiyorsa her şeyini verirsin.', '<b>Paying:</b> from your bank and table; no change. If it is not enough, you give everything.'],
+  ['<b>Kira:</b> iki renkli kira herkesten, Joker Kira tek rakipten. İkiye Katla kira kartıyla birlikte oynanır ve ayrıca 1 hamle sayılır.', '<b>Rent:</b> two-color rent is charged to everyone, Wild Rent to one opponent. Double The Rent is played with a rent card and costs 1 extra move.'],
+  ['<b>Tapu Devri / Değiş Tokuş</b> tam setlerden kart alamaz. <b>Haciz</b> tam seti ev/otel ile birlikte alır.', '<b>Sly Deal / Forced Deal</b> cannot take from full sets. <b>Deal Breaker</b> takes a full set with its house/hotel.'],
+  [`<b>Ev</b> tam sete (+3M), <b>Otel</b> evli tam sete (+4M). İstasyon ve İdare'ye resmi kuralda konmaz; oyun kurulurken "Kurulabilir" seçildiyse konur. Set bozulursa ev/otel bankana para olarak geçer.`, '<b>House</b> goes on a full set (+3M), <b>Hotel</b> on a full set with a house (+4M). Not allowed on Railroad and Utility unless "Allowed" was chosen at setup. If the set breaks, house/hotel go to your bank as money.'],
+  ['<b>Ev kuralı:</b> tam seti bozmak 1 hamle; set olmamış gruptaki jokeri taşımak ücretsiz.', '<b>House rule:</b> breaking a full set costs 1 move; moving a wildcard in an incomplete group is free.'],
+  ['Arkadaşların bu sayfayı açıp kodu yazsın ya da "Açık lobiler" listesinden katılsın.', 'Your friends can open this page and type the code, or join from the "Open lobbies" list.'],
+  ['Bu bağlantıyı arkadaşlarına gönder. Açıp adlarını yazınca lobiye gelirler; Claude hesabı gerekmez.', 'Send this link to your friends. They open it, type their name and land in the lobby; no Claude account needed.'],
+  ['Katılma isteğin gönderildi, kurucunun sayfası açıkken birkaç saniyede listeye eklenirsin…', 'Join request sent; you will be added in a few seconds while the host has the page open…'],
+  ['Oyun boyunca senin sayfanın açık kalması gerekir: hamleleri senin tarayıcın işler.', 'Keep this page open during the game: your browser processes the moves.'],
+  ['Başlatmak için en az 2 oyuncu gerekiyor (bot da olur).', 'You need at least 2 players to start (bots count).'],
+  ['Hangi renk olarak açılsın? Set olmadığı sürece rengini sonra ücretsiz değiştirebilirsin; tam seti bozmak 1 hamle.', 'Which color should it be? You can change it for free later while the group is incomplete; breaking a full set costs 1 move.'],
+  ['Reddet kartı, biri sana hamle yaptığında otomatik olarak sorulur. Şimdi sadece bankaya koyabilirsin.', 'You will be asked about Just Say No automatically when someone makes a move against you. For now you can only bank it.'],
+  ['Hamle hakkın bitti. Joker tapularını düzenleyip "Sırayı bitir"e bas.', 'No moves left. Arrange your wildcards and tap "End turn".'],
+  [' Aynı renkte boşta tapun varsa otomatik sete geçer ve ev/otel yerinde kalır; yoksa ev/otel bankana para olarak geçer.', ' A loose property of the same color fills the set automatically and the house/hotel stay; otherwise the house/hotel go to your bank as money.'],
+  ['Rakiplerin tamamlanmamış setlerinde alınabilecek tapu yok.', 'Your opponents have no properties in incomplete sets to take.'],
+  ['Takas için tamamlanmamış bir setinde tapu olmalı.', 'You need a property in an incomplete set to swap.'],
+  ['Ödeyeceğin kartları seç (para üstü verilmez):', 'Choose the cards to pay with (no change given):'],
+  ['Hamle henüz işlenmedi. Kurucunun oyun sayfası açık olmalı.', "The move hasn't been processed yet. The host's game page must be open."],
+  ['Oyun bağlantısı koptu. Sayfayı yeniden açıp "Devam et" ile dönebilirsin.', 'Lost connection to the game. Reopen the page and tap "Continue" to return.'],
+  ['Bu kodla açık bir oyun bulunamadı. Oyunu kuranın sayfası açık olmalı.', "No open game with this code. The host's page must be open."],
+  ['Oyuna bağlanılamadı. Kod doğru mu, kurucunun sayfası açık mı?', "Couldn't connect to the game. Is the code right and is the host's page open?"],
+  ['Bağlantı yok; yeniden bağlanılıyor, birazdan tekrar dene.', 'No connection; reconnecting, try again shortly.'],
+  ['Hamle gönderilemedi: bu sayfada yazma iznin yok.', 'Move not sent: you have no write permission on this page.'],
+  ['Oyun kurulamadı: bu sayfada yazma iznin yok.', 'Could not create the game: no write permission on this page.'],
+  ['Katılamadın: bu sayfada yazma iznin yok.', 'Could not join: no write permission on this page.'],
+  ['Oyun verisine ulaşılamıyor, bağlantını kontrol et.', 'Cannot reach the game data; check your connection.'],
+  ['Kopyalanamadı; bağlantıyı seçip kopyala.', "Couldn't copy; select the link and copy it."],
+  ['Sadece banka ve masandaki kartlarla ödeyebilirsin.', 'You can only pay with your bank and table cards.'],
+  ['Sadece joker tapu senetlerinin rengi değiştirilebilir.', 'Only property wildcards can change color.'],
+  ['Reddet sadece sana yapılan bir hamleye karşı oynanır. İstersen bankaya koy.', 'Just Say No is only played against a move on you. You can bank it instead.'],
+  ['Seti bozmak 1 hamle ister; hamle hakkın kalmadı.', 'Breaking a set costs 1 move; you have no moves left.'],
+  ['Bu oyunda İstasyon ve İdare setlerine ev/otel konamaz.', 'Houses/hotels are not allowed on Railroad and Utility sets in this game.'],
+  ['Kirayı İkiye Katla bir Kira kartıyla birlikte oynanır.', 'Double The Rent is played together with a Rent card.'],
+  ['Otel için sette ev olmalı ve otel olmamalı.', 'A hotel needs a house on the set and no hotel yet.'],
+  ['Vereceğin tapu tamamlanmamış bir setten olmalı.', 'The property you give must come from an incomplete set.'],
+  ['Rakibin tamamlanmamış bir setinden tapu seç.', "Choose a property from an opponent's incomplete set."],
+  ['Rakibin tamamlanmış bir setini seç.', "Choose an opponent's full set."],
+  ['Ödeme için kart seç ya da Reddet oyna.', 'Choose cards to pay or play Just Say No.'],
+  ['Deste bitti, atılan kartlar karıştırıldı.', 'The deck ran out; the discards were shuffled.'],
+  [' İstasyon ve İdare setlerine ev/otel kurulabilir.', ' Houses/hotels are allowed on Railroad and Utility sets.'],
+  ['İstasyon ve İdare setlerine ev/otel kurulabilir.', 'Houses/hotels are allowed on Railroad and Utility sets.'],
+  ['İstasyon ve İdare setlerine ev/otel kurulamaz.', 'Houses/hotels are not allowed on Railroad and Utility sets.'],
+  [' (aynı renkten iki set de sayılır)', ' (two sets of the same color count)'],
+  [' (setler farklı renkte olmalı)', ' (sets must be different colors)'],
+  ['Aynı renkten ikinci set de sayılır.', 'A second set of the same color also counts.'],
+  ['Setler farklı renkte olmalı.', 'Sets must be different colors.'],
+  ['Bu kartın renklerinde kira alabileceğin tapun yok.', "You have no properties in this card's colors to charge rent for."],
+  ['Bu renkte kira alabileceğin tapun yok.', 'You have no properties of this color to charge rent for.'],
+  ['Bir Kira kartına tıkladığında katlama seçeneği çıkar.', 'The doubling option appears when you tap a Rent card.'],
+  ['Almak istediğin karta dokun. Tam setlerden alınamaz.', 'Tap the card you want. Full sets cannot be taken from.'],
+  ['Vereceğin karta dokun. Tam setlerinden veremezsin.', 'Tap the card to give. You cannot give from full sets.'],
+  ['Sete dokun. Ev ve otel de setle birlikte gelir.', 'Tap a set. Its house and hotel come with it.'],
+  ['Reddet kartınla bu hamleyi iptal edebilirsin.', 'You can cancel this move with your Just Say No card.'],
+  ['Kurucunun oyunu başlatması bekleniyor.', 'Waiting for the host to start the game.'],
+  ['Henüz tapu açmadın. Elinden bir tapuya dokun.', 'No properties yet. Tap a property in your hand.'],
+  ['↻ Daha rahat oynamak için telefonu yan çevir', '↻ Turn your phone sideways for a better view'],
+  ['Kurucudan masayı büyütmesini iste; büyütünce otomatik eklenirsin.', 'Ask the host to enlarge the table; you will be added automatically.'],
+  ['Masa doldu, başlatabilirsin.', 'The table is full, you can start.'],
+  ['kişilik; herkes gelmeden de başlatabilirsin.', ' players; you can start before everyone arrives.'],
+  ['Kurucunun tarayıcısı işliyor.', "The host's browser is processing it."],
+  ['Kartlara bakabilirsin; sıra sende değil.', "You can look at your cards; it's not your turn."],
+  ['Oynamak istediğin karta tıkla.', 'Tap a card to play it.'],
+  ['Fazla kartları atman gerekiyor.', 'You need to discard extra cards.'],
+  ['Jokerin rengini değiştirmek için gruba dokun.', "Tap a group to change a wildcard's color."],
+  ['Sıra sonunda elinde en fazla 7 kart kalabilir.', 'You may hold at most 7 cards at the end of your turn.'],
+  ['Yetmiyor: her şeyini vermelisin.', 'Not enough: you must give everything.'],
+  ['ya da ödeyeceğin kartları seç:', 'or choose the cards to pay with:'],
+  ['Bu grup henüz set değil: jokeri taşımak <b>ücretsiz</b>.', 'This group is not a set yet: moving the wildcard is <b>free</b>.'],
+  ['Ev kuralı: tam seti bozmak <b>1 hamle</b> harcar', 'House rule: breaking a full set costs <b>1 move</b>'],
+  ['Ev için tamamlanmış bir set lazım.', 'A house needs a full set.'],
+  ['Otel için evli tamamlanmış bir set lazım.', 'A hotel needs a full set with a house.'],
+  ['Rakiplerin hiç tam seti yok.', 'Your opponents have no full sets.'],
+  ['Online bağlantı kuruluyor…', 'Connecting online…'],
+  ['Bağlantı koptu, yeniden bağlanıyor…', 'Connection lost, reconnecting…'],
+  ['Bu kodla bir oyun bulunamadı.', 'No game found with this code.'],
+  ['Bu oyun başlamış, artık katılınamaz.', 'This game has already started; you cannot join.'],
+  ['Katılırken hata oldu, tekrar dene.', 'Error while joining, try again.'],
+  ['Hamle gönderilemedi, tekrar dene.', 'Move not sent, try again.'],
+  ['Oyun kurulamadı, tekrar dene.', 'Could not create the game, try again.'],
+  ['Oyun kaydedilemedi: bağlantıyı kontrol et.', 'Could not save the game: check your connection.'],
+  ['Hamle dinleyicisi koptu; sayfayı yenile.', 'Lost the move listener; refresh the page.'],
+  ['Bu oyun başka bir sekmede açık görünüyor.', 'This game seems to be open in another tab.'],
+  ['4 harfli oyun kodunu yaz.', 'Type the 4-letter game code.'],
+  ['Önce adını yaz.', 'Type your name first.'],
+  ['Bağlantı kopyalandı.', 'Link copied.'],
+  ['Oyun bulunamadı.', 'Game not found.'],
+  ['Elinde Reddet kartı yok.', 'You have no Just Say No card.'],
+  ['Sıra sende değil.', "It's not your turn."],
+  ['Şu an yanıt sırası sende değil.', "It's not your turn to respond."],
+  ['Önce fazla kartları atmalısın.', 'Discard your extra cards first.'],
+  ['Yeterli hamle hakkın yok.', 'Not enough moves left.'],
+  ['Hamle hakkın kalmadı.', 'No moves left.'],
+  ['Bu kartla bu hamle yapılamaz.', "You can't do that with this card."],
+  ['Bu kart elinde değil.', 'This card is not in your hand.'],
+  ['Bu kart tapu değil.', 'This card is not a property.'],
+  ['Bu kart bu renk için değil.', 'This card is not for this color.'],
+  ['Bu renge taşınamaz.', "It can't be moved to this color."],
+  ['Tamamlanmış bir set seç.', 'Choose a full set.'],
+  ['Tapular bankaya konamaz.', 'Properties cannot be banked.'],
+  ['Geçersiz İkiye Katla kartı.', 'Invalid Double The Rent card.'],
+  ['Reddet oyna ya da kabul et.', 'Play Just Say No or accept.'],
+  ['Bu sette zaten ev var.', 'This set already has a house.'],
+  ['Geçersiz hamle', 'Invalid move'],
+  ['Bir rakip seç.', 'Choose an opponent.'],
+  ['Renk seç.', 'Choose a color.'],
+  ['Oyun bitti.', 'The game is over.'],
+  ['Bir hata oluştu', 'Something went wrong'],
+  ['Hamle gönderildi…', 'Move sent…'],
+  ['Henüz kart oynanmadı.', 'No cards played yet.'],
+  ['Henüz tapu açmadın.', 'No properties yet.'],
+  ['Kirayı katlamak ister misin?', 'Double the rent?'],
+  ['Kimden 5M alacaksın?', 'Who pays you 5M?'],
+  ['Joker tapuyu başka renge taşı', 'Move the wildcard to another color'],
+  ['Tapu Devri: hangi tapuyu alacaksın?', 'Sly Deal: which property will you take?'],
+  ['Değiş Tokuş: rakipten hangi tapuyu alacaksın?', 'Forced Deal: which property will you take?'],
+  ['Değiş Tokuş: karşılığında hangi tapunu vereceksin?', 'Forced Deal: which of your properties will you give?'],
+  ['Haciz: hangi tam seti alacaksın?', 'Deal Breaker: which full set will you take?'],
+  ['Oyna: alacağın tapu senedini seç', 'Play: choose the property to take'],
+  ['Oyna: takas edilecek tapu senetlerini seç', 'Play: choose the properties to swap'],
+  ['Oyna: alınacak seti seç', 'Play: choose the set to take'],
+  ['Oyna: herkes 2M öder', 'Play: everyone pays 2M'],
+  ['Oyna: 2 kart çek', 'Play: draw 2 cards'],
+  ['Oyna: rakip seç', 'Play: choose an opponent'],
+  ['5M tahsil et', 'collect 5M'],
+  ['Renkli Joker: her renge girer, para değeri yok', 'Multi-color Wildcard: fits any color, no money value'],
+  ['Herhangi bir renge girer', 'Fits any color'],
+  ['Seçtiğin tek rakip, istediğin renk için kira öder.', 'One opponent you choose pays rent for the color you pick.'],
+  ['Bir rakibin tam setini (ev ve otel dahil) al.', "Take an opponent's full set (including house and hotel)."],
+  ['Sana yapılan bir hamleyi iptal et. Başka bir Reddet kartını da iptal eder.', 'Cancel a move against you. Also cancels another Just Say No.'],
+  ['Bir rakibin tam olmayan setinden bir tapu senedi al.', "Take a property from an opponent's incomplete set."],
+  ['Bir tapu senedini bir rakibinkiyle değiştir. Tam setlerden olamaz.', "Swap one of your properties with an opponent's. Not from full sets."],
+  ['Seçtiğin bir rakip sana 5M öder.', 'An opponent you choose pays you 5M.'],
+  ['Herkes sana 2M hediye öder.', 'Everyone pays you a 2M gift.'],
+  ['Desteden 2 kart daha çek.', 'Draw 2 extra cards.'],
+  ['Tamamlanmış bir sete ekle: kira +3M.', 'Add to a full set: rent +3M.'],
+  ['Evli tamamlanmış bir sete ekle: kira +4M.', 'Add to a full set with a house: rent +4M.'],
+  ['Bir Kira kartıyla birlikte oynanır; kira 2 katına çıkar.', 'Played with a Rent card; the rent is doubled.'],
+  ['Sayfayı küçült, masaya bak', 'Minimize and look at the table'],
+  ["Elinde 7'den fazla kart var: önce hamlelerini tamamla", 'More than 7 cards in hand: finish your moves first'],
+  ['Arkadaşlarına bu kodu ver', 'Give this code to your friends'],
+  ['Deal oynayalım! Bu bağlantıdan katıl: ', "Let's play Deal! Join with this link: "],
+  [/: herkes öder\./g, ': everyone pays.'], [/ ya da /g, ' or '],
+  // ---- değişkenli kalıplar ----
+  [new RegExp(TXN + ', ' + TXN + ' adlı oyuncudan (\\d+)M kira istiyor \\(' + '([^)<>]*)' + '\\)', 'g'), '$1 asks $2 for $3M rent ($4)'],
+  [new RegExp(TXN + ', ' + TXN + ' adlı oyuncudan 5M tahsilat yapıyor', 'g'), '$1 is collecting 5M from $2'],
+  [new RegExp(TXN + "'in doğum günü: " + TXN + ' 2M hediye ödeyecek', 'g'), "It's $1's birthday: $2 pays a 2M gift"],
+  [new RegExp(TXN + ', ' + TXN + ' adlı oyuncunun tapusunu almak istiyor \\(Tapu Devri\\)', 'g'), '$1 wants to take a property from $2 (Sly Deal)'],
+  [new RegExp(TXN + ', ' + TXN + ' ile tapu takası yapmak istiyor \\(Değiş Tokuş\\)', 'g'), '$1 wants to swap properties with $2 (Forced Deal)'],
+  [new RegExp(TXN + ', ' + TXN + ' adlı oyuncunun TAM SETİNİ almak istiyor \\(Haciz\\)', 'g'), "$1 wants to take $2's FULL SET (Deal Breaker)"],
+  [new RegExp(' · ' + TXN + ' reddetti, ' + TXN + ' karar veriyor', 'g'), ' · $1 said no, $2 decides'],
+  [new RegExp(TXN + ' hamleni reddetti', 'g'), '$1 said no to your move'],
+  ['. Sen de Reddet oynarsan hamlen geçerli olur.', '. Play Just Say No too and your move goes through.'],
+  [' · Yanıt sende!', ' · Your response!'], [' · yanıt bekleniyor…', ' · waiting for a response…'],
+  [new RegExp(TXN + ' fazla kartlarını atıyor…', 'g'), '$1 is discarding extra cards…'],
+  [new RegExp(TXN + ' oynuyor…', 'g'), '$1 is playing…'],
+  [/Elinde (\d+) kart var: sırayı bitirmeden önce kalan (\d+) hamleni yapmalısın\./g, 'You have $1 cards: play your remaining $2 moves before ending your turn.'],
+  [/Elinde (\d+) kart var\. 7'den fazla kartın varken sıranı bitiremezsin: önce kalan (\d+) hamleni yap\./g, "You have $1 cards. You can't end your turn with more than 7 cards: first play your remaining $2 moves."],
+  [/Elinde (\d+) kart var: (\d+) kart atmalısın/g, 'You have $1 cards: discard $2'],
+  [/Elinde (\d+) kart var: (\d+) kart at/g, 'You have $1 cards: discard $2'],
+  [/Sıra sende: (\d+) hamle hakkın var\./g, 'Your turn: $1 moves left.'],
+  [/(\d+)\. turda (\d+) tam set tamamlandı\./g, '$2 full sets completed on turn $1.'],
+  [new RegExp('🏆 ' + TXN + ' (\\d+) tam set topladı ve KAZANDI!', 'g'), '🏆 $1 collected $2 full sets and WON!'],
+  [new RegExp('🏆 ' + TXN + ' kazandı!', 'g'), '🏆 $1 wins!'],
+  [/Oyun başladı! (\d+) tam set toplayan kazanır/g, 'Game started! First to $1 full sets wins'],
+  [new RegExp('▶ ' + TXN + ' sırasına başladı, (\\d+) kart çekti\\.', 'g'), '▶ $1 started their turn and drew $2 cards.'],
+  [new RegExp(TXN + ' elinde 7 kart kalana kadar kart atmalı\\.', 'g'), '$1 must discard down to 7 cards.'],
+  [new RegExp(TXN + ' karşılık veremedi, hamle iptal\\.', 'g'), '$1 could not respond; the move is cancelled.'],
+  [new RegExp(TXN + ' ödeyecek bir şeyi yok\\.', 'g'), '$1 has nothing to pay.'],
+  [new RegExp(TXN + ' (\\d+) kart attı\\.', 'g'), '$1 discarded $2 cards.'],
+  [new RegExp(TXN + ' sırasını bitirdi\\.', 'g'), '$1 ended their turn.'],
+  [new RegExp(TXN + ' joker tapuyu ' + TXC + ' → ' + TXC + ' taşıdı', 'g'), '$1 moved a wildcard $2 → $3'],
+  [' (ücretsiz)', ' (free)'], [' (1 hamle)', ' (1 move)'],
+  [new RegExp(TXN + ' bankaya (\\d+)M koydu', 'g'), '$1 banked $2M'],
+  [new RegExp(TXN + ' bankaya koydu: ', 'g'), '$1 banked: '],
+  [new RegExp(TXN + ' tapu açtı: ', 'g'), '$1 played a property: '],
+  [new RegExp(TXN + ' Tekrar Çek oynadı, 2 kart çekti\\.', 'g'), '$1 played Pass Go and drew 2 cards.'],
+  [new RegExp(TXC + ' setine ev koydu', 'g'), 'added a house to the $1 set'],
+  [new RegExp(TXC + ' setine otel koydu', 'g'), 'added a hotel to the $1 set'],
+  [': Doğum Günü! Herkes 2M öder.', ": It's My Birthday! Everyone pays 2M."],
+  [new RegExp('Haciz! \\(' + TXC + ' seti\\)', 'g'), 'Deal Breaker! ($1 set)'],
+  [new RegExp(TXC + ' için (\\d+)M kira istedi', 'g'), 'asked $2M rent for $1'],
+  [' (herkesten)', ' (from everyone)'],
+  [new RegExp(TXN + ' kabul etti, hamle iptal oldu\\.', 'g'), '$1 accepted; the move was cancelled.'],
+  [new RegExp(TXN + ', ' + TXN + "'in " + TXC + ' setini aldı\\.', 'g'), "$1 took $2's $3 set."],
+  [new RegExp(TXN + ', ' + TXN + "'in  setini aldı\\.", 'g'), "$1 took $2's set."],
+  [/Takas tamam: /g, 'Swap done: '],
+  [new RegExp(TXN + ' tapuyu aldı\\.', 'g'), '$1 took the property.'],
+  [/: (\d+)M ödedi/g, ': paid $1M'],
+  [new RegExp(': set bozuldu, (Ev|Otel)(?: \\+ (Otel))? bankaya para olarak geçti', 'g'), (m, a, b) => ': set broken, ' + (a === 'Ev' ? 'house' : 'hotel') + (b ? ' + hotel' : '') + ' moved to the bank as money'],
+  [/: set bozuldu, (ev ve otel|ev|otel) bankaya para olarak geçti/g, (m, a) => ': set broken, ' + ({ 'ev ve otel': 'house and hotel', ev: 'house', otel: 'hotel' })[a] + ' moved to the bank as money'],
+  [new RegExp(': boştaki ' + '([^<>]+?) ' + TXC + ' setine geçti, set tam kaldı\\.', 'g'), ': loose $1 moved into the $2 set; the set stays complete.'],
+  [new RegExp(': boştaki ' + '([^<>]+?) ' + TXC + ' setine geçti\\.', 'g'), ': loose $1 moved into the $2 set.'],
+  [new RegExp(TXN + ' jokeri ' + TXC + ' rengine taşıdı', 'g'), '$1 moved a wildcard to $2'],
+  [new RegExp(TXN + ' oynadı: ', 'g'), '$1 played: '],
+  [/Kimden (\d+)M kira isteyeceksin\?/g, 'Who should pay $1M rent?'],
+  [/ oynadı: /g, ' played: '], [/ tapu açtı: /g, ' played a property: '], [/ bankaya koydu: /g, ' banked: '],
+  [new RegExp(' jokeri ' + TXC + ' rengine taşıdı', 'g'), ' moved a wildcard to $1'],
+  ["'1 hamle'", "'1 move'"], ['>1 hamle<', '>1 move<'],
+  [/Masa dolu \((\d+) kişilik\)\./g, 'The table is full ($1 players).'],
+  [/Oyun dolu \((\d+) kişilik\)\./g, 'The game is full ($1 players).'],
+  [/Masa (\d+) kişilik;/g, 'Table for $1;'],
+  [/Oyuncular \((\d+)\/(\d+)\)/g, 'Players ($1/$2)'],
+  [/>(\d+) kişi</g, '>$1<'],
+  [/Kaç kişilik: /g, 'Players: '],
+  [/(\d+) × İkiye Katla ekle/g, 'Add $1 × Double The Rent'],
+  [/(\d+)M · (\d+) hamle/g, '$1M · $2 moves'],
+  [/(\d+) kart (\d+)M/g, '$1 cards $2M'],
+  [/(\d+) kart = tam set/g, '$1 cards = full set'],
+  [/ · tam set/g, ' · full set'],
+  [/(\d+)\/(\d+) kartı at/g, 'Discard $1/$2'],
+  [/(\d+)M öde/g, 'Pay $1M'],
+  [/\(kalan (\d+)\)/g, '($1 left)'],
+  [/Şu an <b>([^<]+)<\/b> grubunda \((\d+) kart\)\./g, 'Currently in the <b>$1</b> group ($2 cards).'],
+  [/Şu an <b>/g, 'Now <b>'],
+  [/<b class="code">([A-Z]{4})<\/b> oyununa davet edildin\. Adını yaz ve <b>Katıl<\/b>'a bas\./g, 'You were invited to game <b class="code">$1</b>. Type your name and tap <b>Join</b>.'],
+  [/varlığın (\d+)M, hepsini vermelisin/g, 'you have $1M in total, you must give everything'],
+  [/Toplam varlığın (\d+)M/g, 'Total assets $1M'],
+  [/Seçilen <b>/g, 'Selected <b>'], [/ \/ borç <b>/g, ' / owed <b>'], [' · para üstü verilmez', ' · no change given'],
+  [/Borç (\d+)M/g, 'Owed $1M'], [/Seçilen (\d+)M/g, 'Selected $1M'],
+  [/Elinde (\d+) kart/g, '$1 cards in hand'], [/Elin \((\d+)\)/g, 'Your hand ($1)'],
+  [/Tapular (\d+)M/g, 'Properties $1M'], [/Para değeri (\d+)M/g, 'Money value $1M'],
+  [/Banka (\d+)M · masa (\d+)M/g, 'Bank $1M · table $2M'],
+  [/Değeri (\d+)M\./g, 'Value $1M.'],
+  [/\+(\d+)M para olarak/g, '+$1M as money'],
+  [/Kira tablosu: /g, 'Rent table: '], [' · ev +3M, otel +4M', ' · house +3M, hotel +4M'],
+  [/Kira iste: /g, 'Charge rent: '], ['· tek rakipten', '· from one opponent'], ['· herkesten', '· from everyone'],
+  [/Aç: /g, 'Play as: '],
+  [/ setine</g, ' set<'],
+  [/>([^<>]+) setine koy: /g, '>Add to set: '],
+  [/Alacağın · /g, 'You take · '], [/Senden alınacak set · /g, 'Set taken from you · '],
+  [/Senin ((?:Açık )?[A-Za-zÇĞİÖŞÜçğıöşü]+) (\d+\/\d+)/g, 'Your $1 $2'],
+  [/kira (\d+)M/g, 'rent $1M'], [/Kira (\d+)M/g, 'Rent $1M'], [/\(kira (\d+)M\)/g, '(rent $1M)'],
+  [/Deste · (\d+)/g, 'Deck · $1'], [/Deste (\d+)/g, 'Deck $1'], [/Tur (\d+)/g, 'Round $1'], [/El (\d+) · /g, 'Hand $1 · '], [/>El (\d+)</g, '>Hand $1<'],
+  [/Oyun kodu: /g, 'Game code: '],
+  [/ ödedi/g, ' paid'],
+  [/Rengini değiştir/g, 'Change color'],
+  [/ \(sen\)/g, ' (you)'],
+  [/Sıra: /g, 'Turn: '],
+  // ---- kısa ifadeler ----
+  ['Arkadaşlarla oyna', 'Play with friends'], ['Botlarla dene', 'Try with bots'], ['Botlarla başlat', 'Start with bots'],
+  ['Yeni oyun kur', 'Create a game'], ['ya da kodla katıl', 'or join with a code'], ['Oyunlarım', 'My games'], ['Açık lobiler', 'Open lobbies'],
+  ['Lobiye dön', 'Back to lobby'], ['Devam et', 'Continue'], ['Kısa kurallar', 'Quick rules'], ['Bot sayısı', 'Bots'],
+  ['Kaç sette bitsin', 'Sets to win'], ['Aynı renkten 2. set', '2nd set of same color'], ["İstasyon/İdare'ye ev-otel", 'Houses on Railroad/Utility'],
+  ['Kurulamaz', 'Not allowed'], ['Kurulabilir', 'Allowed'], ['Sayılmaz', "Doesn't count"], ['Sayılır', 'Counts'],
+  ['placeholder="Örn. Engin"', 'placeholder="e.g. Alex"'], ['placeholder="KOD"', 'placeholder="CODE"'],
+  ['>Adın<', '>Name<'], ['>Katıl<', '>Join<'], ['>Çıkar<', '>Remove<'], ['+ Bot ekle', '+ Add bot'], ['Oyunu başlat', 'Start game'],
+  ['Oyun kodu', 'Game code'], ['Bağlantıyı kopyala', 'Copy link'], ["WhatsApp'ta paylaş", 'Share on WhatsApp'], ['>Bitiş<', '>Game settings<'],
+  ['toplayan kazanır.', 'wins.'], ['>Kurucu<', '>Host<'], ['← Ana sayfa', '← Home'], ['>Ana sayfa<', '>Home<'], ['Ana sayfaya dön', 'Back to the home page'],
+  ['← Çık', '← Exit'], ['>Kayıt<', '>Log<'], ['>Kurallar<', '>Rules<'], ['Bot masası', 'Bot table'], ['>Kod <', '>Code <'],
+  ['Sırayı bitir', 'End turn'], ['Önce oyna (7+ kart)', 'Play first (7+ cards)'], ['Sıra sende', 'Your turn'], ['bağlantı yok', 'offline'],
+  ['Oyun kaydı', 'Game log'], ['Tüm hamleler', 'All moves'], ['Oyundan çık', 'Leave game'], ['>Menü<', '>Menu<'], ['aria-label="Menü"', 'aria-label="Menu"'],
+  ['▾ Masaya bak', '▾ View table'], ['>Yanıtla<', '>Respond<'], ['>Kart at<', '>Discard<'], ['Otomatik seç', 'Auto select'], ['>Otomatik<', '>Auto<'], ['>Öde<', '>Pay<'],
+  ['✋ Reddet', '✋ Just Say No'], ['(elinde ', '(in hand: '], ['Kabul et (hamle iptal)', 'Accept (move cancelled)'], ['>Kabul et<', '>Accept<'],
+  ['Senden alınacak', 'Taken from you'], ['Sana verilecek', 'Given to you'], ['Burada kart yok.', 'No cards here.'],
+  ['>Vazgeç<', '>Cancel<'], ['>Kapat<', '>Close<'], ['>Tamam<', '>OK<'], ['← Geri', '← Back'], ['Yeniden oyna', 'Play again'],
+  ['Bankaya koy', 'Bank it'], ['Tapu olarak aç', 'Play as property'], ['Normal kira', 'Normal rent'],
+  ['Para kartı.', 'Money card.'], ['Kira hamle kartı.', 'Rent action card.'], ['Joker tapu senedi.', 'Property wildcard.'], ['Tapu senedi.', 'Property card.'],
+  ['Şu an bu kartı oynayamazsın', "You can't play this card right now"], [' (hamle hakkın bitti).', ' (no moves left).'], [' (sıra sende değil).', " (not your turn)."],
+  ['SON HAMLE', 'LAST MOVE'], ['>Yer<', '>Discard<'], ['Henüz tapu yok', 'No properties yet'], ['>Tapu yok<', '>No properties<'],
+  ['title="Elindeki kart"', 'title="Cards in hand"'], ['aria-label="Tamamını aç"', 'aria-label="Open"'], ['ayrıntı için tıkla', 'tap for details'],
+  ['Yükleniyor…', 'Loading…'], ['>Sen<', '>You<'], [/>boş</g, '>empty<'], [/ adet"/g, '"'],
+  // kart yüzleri
+  ['TAPU SENEDİ', 'PROPERTY'], ['HAMLE KARTI', 'ACTION CARD'], ['⇅ JOKER TAPU', '⇅ WILDCARD'], ['>JOKER<', '>WILD<'], ['HER<br>RENK', 'ANY<br>COLOR'],
+  ['DEAL<br>BANKASI', 'BANK OF<br>DEAL'], ['>KİRA<', '>RENT<'], ['>MİLYON<', '>MILLION<'],
+  [/>(BİR|İKİ|ÜÇ|DÖRT|BEŞ|ON) MİLYON</g, (m, w) => '>' + ({ 'BİR': 'ONE', 'İKİ': 'TWO', 'ÜÇ': 'THREE', 'DÖRT': 'FOUR', 'BEŞ': 'FIVE', 'ON': 'TEN' })[w] + ' MILLION<'],
+  [/>(\d+)M para</g, '>$1M money<'],
+  [/>(\d+)\/(\d+) set</g, '>$1/$2 set<'], [/> set</g, '> sets<'],
+  // kart adları
+  ['Kirayı İkiye Katla', 'Double The Rent'], ['İkiye Katla', 'Double The Rent'], ['Joker Tapu Senedi', 'Property Wildcard'], ['Renkli Joker', 'Multi-color Wildcard'],
+  ['Joker Kira', 'Wild Rent'], ['Tapu Devri', 'Sly Deal'], ['Değiş Tokuş', 'Forced Deal'], ['Tahsilat', 'Debt Collector'], ['Doğum Günü', "It's My Birthday"],
+  ['Tekrar Çek', 'Pass Go'], ['Haciz', 'Deal Breaker'], ['Reddet', 'Just Say No'],
+  [/(>|"|^| )Kira(<|"|:| )/g, '$1Rent$2'], [/(>|"|\+ |^)Ev(<|"| \+|$)/g, '$1House$2'], [/(>|"|\+ |^)Otel(<|"| \+|$)/g, '$1Hotel$2'],
+  ['EV +3M', 'HOUSE +3M'], ['OTEL +4M', 'HOTEL +4M'], ['>EV<', '>HOUSE<'], ['>OTEL<', '>HOTEL<'],
+  ['Joker → ', 'Wildcard → '], ['>⇅ Joker<', '>⇅ Wild<'], ['joker', 'wildcard'],
+  // renkler
+  ['Kahverengi', 'Brown'], ['Açık Mavi', 'Light Blue'], ['Pembe', 'Pink'], ['Turuncu', 'Orange'], ['Kırmızı', 'Red'], ['Sarı', 'Yellow'], ['Yeşil', 'Green'], ['Lacivert', 'Dark Blue'],
+  [/İstasyon(?![uı])/g, 'Railroad'], [/İdare(?!si)/g, 'Utility'],
+  // tek kelimeler (etiketler)
+  ['>Banka<', '>Bank<'], [/>Banka </g, '>Bank '], [/Banka (\d+)M/g, 'Bank $1M'], ['>Masa<', '>Table<'], ['tam set', 'full set'], [/ \(sen\)/g, ' (you)'],
+];
+function tx(html) {
+  if (LANG !== 'en' || !html) return html;
+  let out = String(html);
+  for (const [f, r] of TX_RULES) out = typeof f === 'string' ? out.split(f).join(r) : out.replace(f, r);
+  return out;
+}
+const L = (tr, en) => (LANG === 'en' ? en : tr);
+
 // ===== OYUN MOTORU: Monopoly Deal kuralları (+ ev kuralı: yerdeki tapuyu başka renge taşımak 1 hamle) =====
 const Engine = (() => {
   const COLORS = {
@@ -1824,7 +2142,7 @@ document.addEventListener('keydown', e => {
 });
 
 function toast(msg) {
-  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = tx(msg); document.body.appendChild(t);
   setTimeout(() => t.remove(), 3200);
 }
 
@@ -1971,7 +2289,7 @@ function render() {
   else if (app.view === 'game') html = gameHTML();
   html += modalHTML();
   if (app._lastView !== app.view) { try { window.scrollTo(0, 0); } catch (e) {} app._lastView = app.view; }
-  $root.innerHTML = html;
+  $root.innerHTML = tx(html);
   const lb = $root.querySelector('.logbox'); if (lb) lb.scrollTop = 0;
   const pcw = $root.querySelector('.pay-cards'); if (pcw) { let w = parseInt(pcw.style.getPropertyValue('--cw')) || 80; while (pcw.scrollHeight > pcw.clientHeight + 1 && w > 46) { w -= 3; pcw.style.setProperty('--cw', w + 'px'); } }
   $root.querySelectorAll('[data-sk]').forEach(el => { const v = keep[el.dataset.sk]; if (v) { el.scrollLeft = v[0]; el.scrollTop = v[1]; } });
@@ -2009,6 +2327,7 @@ function homeHTML() {
   const fan = fanIds.map((id, i) => `<div class="fc f${i}">${cardHTML(id)}</div>`).join('');
   return `<div class="home h2">
     <section class="hero">
+      <div class="langsw seg" data-k="${cb(e => { const l = e.target.dataset.lang; if (l) { setLang(l); render(); } })}"><button data-lang="tr" class="${LANG === 'tr' ? 'on' : ''}">Türkçe</button><button data-lang="en" class="${LANG === 'en' ? 'on' : ''}">English</button></div>
       <div class="htext"><div class="logo">DEAL</div><p>Arkadaşlarınla online kart oyunu. Tapuları topla, kira iste, setleri kap. Seçilen sayıda tam set toplayan kazanır.</p>
         <label class="namebox"><span>Adın</span><input id="nameInput" maxlength="16" placeholder="Örn. Engin" value="${esc(app.name)}"></label></div>
       <div class="fan" aria-hidden="true">${fan}</div>
@@ -2233,6 +2552,7 @@ function menuModal() {
   return `<h3>Menü</h3><div class="opts">
     ${optBtn('Oyun kaydı', 'Tüm hamleler', () => openModal({ type: 'log' }))}
     ${optBtn('Kurallar', '', () => openModal({ type: 'rules' }))}
+    ${optBtn(LANG === 'en' ? 'Türkçe' : 'English', LANG === 'en' ? 'Dili değiştir' : 'Change language', () => { setLang(LANG === 'en' ? 'tr' : 'en'); app.ui.modal = null; render(); })}
     ${app.local ? '' : optBtn('Oyun kodu: ' + esc(app.code || ''), 'Arkadaşlarına bu kodu ver', () => {})}
     ${optBtn('Oyundan çık', 'Ana sayfaya dön', () => { app.ui.modal = null; goHome(); })}
   </div>${cancelBtn()}`;
@@ -2316,7 +2636,7 @@ function showBld(B) {
   const el = document.createElement('div'); el.className = 'flyin bldfly';
   el.style.setProperty('--dy', B.seat === app.mySeat ? '320px' : '-320px'); el.style.setProperty('--rot', '0deg');
   const total = B.cards.reduce((x, id) => x + C(id).v, 0);
-  el.innerHTML = `<div class="row" style="flex-wrap:nowrap">${B.cards.map(id => cardHTML(id)).join('')}</div><div class="cap">${esc(S().players[B.seat].name)}: set bozuldu, ${B.cards.length > 1 ? 'ev ve otel' : (C(B.cards[0]).a === 'house' ? 'ev' : 'otel')} bankaya para olarak geçti (+${total}M)</div>`;
+  el.innerHTML = tx(`<div class="row" style="flex-wrap:nowrap">${B.cards.map(id => cardHTML(id)).join('')}</div><div class="cap">${esc(S().players[B.seat].name)}: set bozuldu, ${B.cards.length > 1 ? 'ev ve otel' : (C(B.cards[0]).a === 'house' ? 'ev' : 'otel')} bankaya para olarak geçti (+${total}M)</div>`);
   setTimeout(() => { document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }, 900);
 }
 
@@ -2326,7 +2646,7 @@ function showFly(L) {
   const mine = L.seat === app.mySeat;
   el.style.setProperty('--dy', mine ? '320px' : '-320px');
   el.style.setProperty('--rot', mine ? '8deg' : '-10deg');
-  el.innerHTML = cardHTML(L.card, { color: L.kind === 'prop' || L.kind === 'move' ? L.color : null }) + `<div class="cap">${lastText(L).replace(/<\/?b>/g, '')}</div>`;
+  el.innerHTML = tx(cardHTML(L.card, { color: L.kind === 'prop' || L.kind === 'move' ? L.color : null }) + `<div class="cap">${lastText(L).replace(/<\/?b>/g, '')}</div>`);
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2050);
 }
@@ -2717,7 +3037,7 @@ function scheduleBots() {
 // ---------- ÇEVRİMDIŞI ----------
 function startLocal() {
   stopOnline();
-  const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
+  const names = LANG === 'en' ? ['Bot Alex', 'Bot Sam', 'Bot Mia', 'Bot Leo'] : ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const players = [{ uid: 'me', name: (app.name || 'Ben').trim(), bot: false }, ...names.slice(0, app.botCount).map((n, i) => ({ uid: 'bot' + i, name: n, bot: true }))];
   app.local = true; app.isHost = false; app.code = null; app.game = null;
   app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets, railBuild: app.railBuild, botLevel: 'hard' }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
@@ -2759,7 +3079,7 @@ function handleRemote(uid, a) {
 function hostAddBot() {
   const players = H.players || app.game.players;
   if (players.length >= maxOf(app.game)) return;
-  const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
+  const names = LANG === 'en' ? ['Bot Alex', 'Bot Sam', 'Bot Mia', 'Bot Leo'] : ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const used = new Set(players.map(p => p.name));
   const name = names.find(n => !used.has(n)) || 'Bot ' + players.length;
   H.players = [...players, { uid: 'bot-' + Math.random().toString(36).slice(2, 8), name, bot: true }];
@@ -2838,7 +3158,7 @@ const shareLink = code => location.origin + location.pathname + '#' + code;
 function netShareHTML(code) {
   const link = shareLink(code);
   const kCopy = cb(async () => { try { await navigator.clipboard.writeText(link); toast('Bağlantı kopyalandı.'); } catch (e) { const i = document.getElementById('shareLink'); if (i) { i.select(); } toast('Kopyalanamadı; bağlantıyı seçip kopyala.'); } });
-  const wa = 'https://wa.me/?text=' + encodeURIComponent('Deal oynayalım! Bu bağlantıdan katıl: ' + link);
+  const wa = 'https://wa.me/?text=' + encodeURIComponent((LANG === 'en' ? "Let's play Deal! Join with this link: " : 'Deal oynayalım! Bu bağlantıdan katıl: ') + link);
   return `<div class="col" style="gap:8px">
     <div class="muted">Bu bağlantıyı arkadaşlarına gönder. Açıp adlarını yazınca lobiye gelirler; Claude hesabı gerekmez.</div>
     <input id="shareLink" readonly value="${esc(link)}" style="width:100%">
