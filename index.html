@@ -482,20 +482,29 @@ html{overflow-x:hidden}
   -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
 .gs::-webkit-scrollbar{display:none}
 .lp-empty{font-size:11.5px;color:#cfe3d6;opacity:.75;align-self:center}
-.lp-g{--gw:52px;--gh:30px;--step:10px;flex:0 0 var(--gw);display:flex;flex-direction:column;gap:3px;cursor:pointer}
+.lp-g{--gw:56px;--gh:34px;--step:12px;--bh:12px;flex:0 0 var(--gw);display:flex;flex-direction:column;gap:4px;cursor:pointer}
 .lp-g .mst{position:relative;height:calc(var(--n)*var(--step) + var(--gh))}
-.lp-g .mp{position:absolute;left:0;right:0;top:calc(var(--i)*var(--step));height:var(--gh);border-radius:5px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35);overflow:hidden;
-  font-style:normal;font-weight:800;font-size:8px;line-height:11px;padding:0 3px;white-space:nowrap;color:var(--k);
-  background:linear-gradient(180deg,var(--c) 0 11px,#fffdf6 11px)}
-.lp-g .mp.jk{background:repeating-linear-gradient(135deg,rgba(255,255,255,.45) 0 3px,transparent 3px 6px) 0 0/100% 11px no-repeat,var(--hb, linear-gradient(var(--c),var(--c))) 0 0/100% 11px no-repeat,#fffdf6}
-.lp-g.full .mp{box-shadow:0 0 0 1.5px var(--gold),0 1px 3px rgba(0,0,0,.35)}
-.lp-g .bb{position:absolute;right:-4px;top:-6px;display:flex;gap:1px;z-index:9}
-.lp-g .hb{font-style:normal;width:15px;height:15px;border-radius:4px;background:#2e8b57;border:1.5px solid #fff;color:#fff;font-size:9px;line-height:12px;text-align:center;font-weight:800}
+.lp-g .mp{position:absolute;left:0;right:0;top:calc(var(--i)*var(--step));height:var(--gh);border-radius:6px;overflow:hidden;font-style:normal;
+  background:linear-gradient(180deg,#fffdf7,#f3ead6);border:1px solid color-mix(in srgb,var(--c) 55%,#000);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -1px 0 rgba(0,0,0,.12) inset,0 2px 4px rgba(0,0,0,.35);display:flex;flex-direction:column}
+.lp-g .mp b{display:block;flex:0 0 var(--bh);height:var(--bh);background:var(--band,var(--c));color:var(--k);font-weight:800;font-size:8px;line-height:var(--bh);padding:0 4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em;border-bottom:1px solid rgba(0,0,0,.18)}
+.lp-g .mp.jk b{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+.lp-g .mp .lad{flex:1;display:flex;align-items:center;justify-content:center;gap:2px;padding:0 3px}
+.lp-g .mp .lad em{font-style:normal;flex:1;max-width:14px;height:11px;border-radius:3px;font-size:7.5px;font-weight:800;line-height:11px;text-align:center;
+  color:color-mix(in srgb,var(--c) 60%,#333);background:color-mix(in srgb,var(--c) 14%,#fff);border:1px solid color-mix(in srgb,var(--c) 35%,transparent)}
+.lp-g .mp .lad em.past{background:color-mix(in srgb,var(--c) 40%,#fff)}
+.lp-g .mp .lad em.on{background:var(--c);color:var(--k);border-color:color-mix(in srgb,var(--c) 70%,#000)}
+.lp-g.full .mst{filter:drop-shadow(0 0 2px rgba(245,197,24,.9))}
+.lp-g.full .mp{border-color:#c9a000}
+.lp-g .bb{position:absolute;right:-5px;bottom:-5px;display:flex;gap:2px;z-index:9}
+.lp-g .hb{font-style:normal;width:17px;height:17px;border-radius:5px;background:#2e8b57;border:1.5px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.lp-g .hb svg{width:12px;height:12px}
 .lp-g .hb.ht{background:#b5382b}
-.lp-g .mm{display:flex;justify-content:space-between;font-weight:800;font-size:9.5px;line-height:1}
-.lp-g .mm b{background:rgba(0,0,0,.45);color:#fff;border-radius:99px;padding:2px 4px}
-.lp-g.full .mm b{background:var(--gold);color:#2a1d00}
-.lp-g .mm span{background:#fff;color:#1d1d1b;border-radius:99px;padding:2px 4px}
+.lp-g .mm{align-self:flex-start;display:inline-flex;gap:4px;align-items:center;font-weight:800;font-size:9.5px;line-height:1;background:rgba(0,0,0,.4);color:#fff;border-radius:99px;padding:2px 6px 2px 5px}
+.lp-g .mm b{font-weight:800}
+.lp-g .mm span{color:#f8d08f}
+.lp-g.full .mm{background:var(--gold);color:#2a1d00}.lp-g.full .mm span{color:#5a3d00}
 .lp-mid{flex:0 0 28%;display:flex;gap:8px;min-height:0}
 .lp-mine{flex:1;min-width:0;position:relative;display:flex;gap:10px;align-items:flex-start;padding:10px 10px 4px;border-radius:14px;background:rgba(0,0,0,.16);border:1.5px dashed rgba(233,216,176,.35)}
 .lp-mine.active{border-color:rgba(245,197,24,.7)}
@@ -504,9 +513,9 @@ html{overflow-x:hidden}
 .lp-mine .bank .tot{font-family:var(--display);font-size:18px;line-height:1;color:#f8d08f}
 .lp-mine .bank .tot small{font-family:var(--body);font-size:9.5px;font-weight:700;color:#cfe3d6;letter-spacing:.1em;margin-left:4px}
 .lp-mine .gs{padding-top:2px;height:100%}
-.lp-mine .lp-g{--gw:64px;--gh:42px;--step:13px}
-.lp-mine .lp-g .mp{font-size:9.5px;line-height:13px;background:linear-gradient(180deg,var(--c) 0 13px,#fffdf6 13px)}
-.lp-mine .lp-g .mp.jk{background:repeating-linear-gradient(135deg,rgba(255,255,255,.45) 0 3px,transparent 3px 6px) 0 0/100% 13px no-repeat,var(--hb, linear-gradient(var(--c),var(--c))) 0 0/100% 13px no-repeat,#fffdf6}
+.lp-mine .lp-g{--gw:70px;--gh:46px;--step:15px;--bh:15px}
+.lp-mine .lp-g .mp b{font-size:10px}
+.lp-mine .lp-g .mp .lad em{height:14px;line-height:14px;font-size:9px;max-width:17px}
 .lp-mine .lp-g .mm{font-size:10.5px}
 .lp-side{flex:0 0 min(200px, 25vw);display:flex;gap:8px;align-items:center;position:relative}
 .lp-side .deck{width:38px;height:54px;border-radius:6px;background:repeating-linear-gradient(45deg,#8c1f1f 0 4px,#a32b2b 4px 8px);border:2px solid #f3d9a8;box-shadow:2px 2px 0 #8c1f1f;position:relative;flex:0 0 auto}
@@ -1652,7 +1661,15 @@ const myTurnFree = () => { const s = S(); return s && s.phase === 'play' && !s.p
 const pname = i => esc(S().players[i].name);
 
 // ---------- ana render ----------
+let touching = false, touchT = null, renderWaiting = false;
+const endTouch = () => { touching = false; clearTimeout(touchT); if (renderWaiting) { renderWaiting = false; render(); } };
+document.addEventListener('touchmove', e => { if (e.target.closest('[data-sk]')) { touching = true; clearTimeout(touchT); touchT = setTimeout(endTouch, 2500); } }, { passive: true });
+document.addEventListener('touchend', () => { if (touching) setTimeout(endTouch, 350); }, { passive: true });
+document.addEventListener('touchcancel', () => { if (touching) setTimeout(endTouch, 350); }, { passive: true });
 function render() {
+  if (touching && app.view === 'game') { renderWaiting = true; return; }
+  const keep = {};
+  $root.querySelectorAll('[data-sk]').forEach(el => { keep[el.dataset.sk] = [el.scrollLeft, el.scrollTop]; });
   CB = [];
   let html = '';
   if (app.view === 'home') html = homeHTML();
@@ -1662,6 +1679,7 @@ function render() {
   if (app._lastView !== app.view) { try { window.scrollTo(0, 0); } catch (e) {} app._lastView = app.view; }
   $root.innerHTML = html;
   const lb = $root.querySelector('.logbox'); if (lb) lb.scrollTop = 0;
+  $root.querySelectorAll('[data-sk]').forEach(el => { const v = keep[el.dataset.sk]; if (v) { el.scrollLeft = v[0]; el.scrollTop = v[1]; } });
   if (app.view === 'game' && S()) {
     const n = S().last ? S().last.n : 0;
     if (app.lastShown >= 0 && n !== app.lastShown && S().last) showFly(S().last);
@@ -1778,15 +1796,24 @@ function lpCoins(p, cls = '') {
 }
 function lpGrp(st, seat) {
   const col = COLORS[st.color], n = st.cards.length, done = Engine.complete(st);
+  const lvl = Math.min(n, col.size) - 1, real = st.cards.some(id => !Engine.isRainbow(id));
   const pcs = st.cards.map((id, i) => {
-    const c = C(id), jk = c.k !== 'prop', rb = Engine.isRainbow(id);
-    return `<i class="mp${jk ? ' jk' : ''}" style="--i:${i}${rb ? `;--hb:${RAINBOW}` : ''}">${esc(jk ? 'Joker' : c.name)}</i>`;
+    const c = C(id), top = i === n - 1;
+    let band = '', cls = 'mp';
+    if (c.k === 'wild') {
+      cls += ' jk';
+      const other = c.colors === 'any' ? null : c.colors.find(x => x !== st.color);
+      band = c.colors === 'any' ? 'linear-gradient(90deg,#e0322f,#f28c28,#f6d22a,#1e9d4b,#3aa0e0,#203f9a,#d6429b)'
+        : `linear-gradient(115deg,${col.hex} 0 78%,rgba(255,255,255,.9) 78% 80%,${COLORS[other].hex} 80%)`;
+    }
+    const body = top ? `<span class="lad">${col.rent.map((r, j) => `<em class="${j === lvl && real ? 'on' : ''}${j < lvl ? ' past' : ''}">${r}</em>`).join('')}</span>` : '';
+    return `<i class="${cls}${top ? ' top' : ''}" style="--i:${i}${band ? `;--band:${band}` : ''}"><b>${c.k === 'wild' ? '⇅ Joker' : esc(c.name)}</b>${body}</i>`;
   }).join('');
-  const b = (st.house != null ? '<em class="hb">⌂</em>' : '') + (st.hotel != null ? '<em class="hb ht">H</em>' : '');
+  const b = (st.house != null ? `<em class="hb" title="Ev">${icon('house')}</em>` : '') + (st.hotel != null ? `<em class="hb ht" title="Otel">${icon('hotel')}</em>` : '');
   const k = cb(() => openModal({ type: 'set', sid: st.sid, seat }));
-  return `<div class="lp-g${done ? ' full' : ''}" style="--c:${col.hex};--k:${col.ink}" data-k="${k}" role="button" tabindex="0" title="${col.n} ${n}/${col.size}">
+  return `<div class="lp-g${done ? ' full' : ''}" style="--c:${col.hex};--k:${col.ink}" data-k="${k}" role="button" tabindex="0" title="${col.n} ${n}/${col.size} · kira ${rentOfStack(st)}M">
     <div class="mst" style="--n:${n - 1}">${pcs}${b ? `<span class="bb">${b}</span>` : ''}</div>
-    <div class="mm"><b>${n}/${col.size}</b><span>${rentOfStack(st)}M</span></div></div>`;
+    <div class="mm">${done ? '✓ ' : ''}<b>${n}/${col.size}</b><span>${rentOfStack(st)}M</span></div></div>`;
 }
 function lpDots(p) {
   const s = S(), t = s.target || 3, n = Engine.countSets(p, s);
@@ -1799,19 +1826,19 @@ function lpOpp(i) {
   return `<section class="lp-opn${s.turn === i ? ' turn' : ''}"><header data-k="${kx}" role="button" tabindex="0">
     <span class="av">${esc((p.name || '?')[0].toUpperCase())}</span><b class="nm">${esc(p.name)}</b>${p.bot ? '<span class="bt">BOT</span>' : ''}${lpDots(p)}
     <span class="hc" title="Elindeki kart">🂠${p.hand.length}</span><span class="tot">${bankTotal(p)}M</span><span class="exp" aria-label="Tamamını aç">⤢</span></header>
-    <div class="ob">${lpCoins(p)}<div class="gs">${gs}</div></div></section>`;
+    <div class="ob">${lpCoins(p)}<div class="gs" data-sk="g${i}">${gs}</div></div></section>`;
 }
 function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
   const W = window.innerWidth, Hh = window.innerHeight;
-  const opps = `<div class="lp-opps${order.length > 2 ? ' many' : ''}">${order.map(lpOpp).join('')}</div>`;
+  const opps = `<div class="lp-opps${order.length > 2 ? ' many' : ''}" data-sk="opps">${order.map(lpOpp).join('')}</div>`;
   let mine = '';
   if (!spectator) {
     const p = me();
     const gs = p.stacks.map(st => lpGrp(st, my)).join('') || '<span class="lp-empty">Henüz tapu açmadın. Elinden bir tapuya dokun.</span>';
     mine = `<div class="lp-mine${s.turn === my ? ' active' : ''}"><span class="lbl">SENİN MASAN ${lpDots(p)}</span>
-      <div class="bank"><div class="tot">${bankTotal(p)}M<small>BANKA</small></div>${lpCoins(p, 'm')}</div><div class="gs">${gs}</div></div>`;
+      <div class="bank"><div class="tot">${bankTotal(p)}M<small>BANKA</small></div>${lpCoins(p, 'm')}</div><div class="gs" data-sk="gme">${gs}</div></div>`;
   }
   const L = s.last;
   const showStatus = s.phase === 'over' || s.pending || s.turn !== my || s.phase === 'discard';
@@ -2038,7 +2065,7 @@ function modalHTML() {
   try { body = renderModal(m); } catch (e) { console.error(e); body = '<h3>Bir hata oluştu</h3>'; }
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
-  return `<div class="veil" data-k="${kClose}"><div class="modal" role="dialog" aria-modal="true">${body}</div></div>`;
+  return `<div class="veil" data-k="${kClose}"><div class="modal" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
