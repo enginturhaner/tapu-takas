@@ -543,6 +543,100 @@ html{overflow-x:hidden}
   .modal{max-height:calc(100dvh - 16px);padding:12px 14px;gap:10px}
 }
 
+/* ===== TELEFON YATAY v2 (Y2: sol ray) ===== */
+.game.lp2{position:fixed;inset:0;overflow:hidden;display:flex;box-shadow:none;height:auto;min-height:0;gap:0;padding:0 !important;
+  background:radial-gradient(ellipse 70% 80% at 62% 40%,#1d7050 0%,#155a40 50%,#0f442f 100%)}
+.r-rail{flex:0 0 min(214px, 27vw);background:rgba(0,0,0,.32);border-right:1px solid rgba(255,255,255,.08);
+  padding:8px 8px 8px max(8px, env(safe-area-inset-left));display:flex;flex-direction:column;gap:7px;overflow-y:auto;scrollbar-width:none}
+.r-rail::-webkit-scrollbar{display:none}
+.r-op{border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);padding:6px 7px;display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
+.r-op.turn{border-color:var(--gold);box-shadow:0 0 0 1.5px var(--gold)}
+.r-op header{display:flex;align-items:center;gap:5px;cursor:pointer;min-height:24px}
+.r-op .av{width:22px;height:22px;border-radius:50%;background:#3b2412;border:2px solid #e9d8b0;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex:0 0 auto}
+.r-op .nm{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.r-op .hc{font-size:10.5px;font-weight:700;color:#cfe3d6;white-space:nowrap;margin-left:auto}
+.r-op .exp{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#e9d8b0;flex:0 0 auto}
+.r-op .r2{display:flex;align-items:center;gap:6px}
+.r-op .tot{font-weight:800;font-size:13px;color:#f8d08f;margin-left:auto;white-space:nowrap}
+.lp-co.six{grid-template-columns:repeat(6,1fr);width:auto;flex:1;gap:2px}
+.lp-co.six span{font-size:9px;line-height:13px;display:flex;flex-direction:column;line-height:1;padding:2px 0}
+.lp-co.six span i{font-size:7.5px;margin:1px 0 0}
+.r-op .gs{padding-top:4px;min-height:60px}
+.r-feed{margin-top:auto;font-size:10px;color:#cfe3d6;line-height:1.3;display:flex;flex-direction:column;gap:3px;padding:4px 2px;cursor:pointer;opacity:.85}
+.r-feed p{margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.r-main{flex:1;min-width:0;display:flex;flex-direction:column;padding:6px max(10px, env(safe-area-inset-right)) 0 10px;gap:6px;position:relative}
+.r-hdr{display:flex;align-items:center;gap:8px;min-height:30px}
+.r-hdr .turnp{background:var(--gold);color:#2a1d00;font-weight:800;font-size:12px;border-radius:99px;padding:4px 10px;white-space:nowrap}
+.r-hdr .turnp.other{background:rgba(255,255,255,.12);color:#f4efe2}
+.r-hdr .dots{display:inline-flex;gap:4px}
+.r-hdr .dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--gold);display:inline-block;background:none}
+.r-hdr .dots i.on{background:var(--gold)}
+.r-msg{flex:1;min-width:0;font-size:11.5px;color:#d9e9df;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-msg b{color:#f8d08f}
+.r-hdr .lp-menu{position:static;flex:0 0 auto}
+.r-table{display:flex;gap:10px;align-items:flex-start;flex:0 0 auto;min-height:0}
+.r-table .bankcol{flex:0 0 auto;display:flex;flex-direction:column;gap:5px}
+.r-table .bankcol .tot{font-family:var(--display);font-size:20px;line-height:1;color:#f8d08f}
+.r-table .bankcol .sets{font-size:10px;font-weight:700;color:#cfe3d6;display:flex;gap:5px;align-items:center}
+.r-table .lp-co.m{width:102px}
+.r-table .gs.gme{flex:1;padding-top:2px;min-height:96px}
+.r-table .gs.gme .lp-g{--gw:76px;--gh:60px;--step:19px;--bh:19px}
+.r-table .gs.gme .lp-g .mp b{font-size:10.5px;padding:0 5px}
+.r-table .gs.gme .lp-g .mp .lad em{height:15px;line-height:15px;font-size:9.5px;max-width:18px}
+.r-table .gs.gme .lp-g .mm{font-size:10.5px}
+.r-center{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:#cfe3d6}
+.r-center .piles{display:flex;gap:6px;align-items:center}
+.r-center .deck{width:40px;height:57px;border-radius:6px;background:repeating-linear-gradient(45deg,#8c1f1f 0 4px,#a32b2b 4px 8px);border:2px solid #f3d9a8;box-shadow:2px 2px 0 #8c1f1f,3px 4px 8px rgba(0,0,0,.35)}
+.r-center .disc .card{--w:40px}
+.r-center .disc.empty{width:40px;height:57px;border-radius:6px;border:1.5px dashed rgba(255,255,255,.25)}
+.r-hand{flex:1;position:relative;min-height:0}
+.r-hand .row{position:absolute;left:0;right:122px;bottom:calc(var(--cw) * -0.06);display:flex;justify-content:flex-start;flex-wrap:nowrap;gap:0}
+.r-hand .card{--w:var(--cw)}
+.r-hand .hs{transition:transform .15s}
+.r-hand .hs:active{transform:translateY(-14px)}
+.r-end{position:absolute;right:0;bottom:12px;width:112px;min-height:50px;border-radius:14px;font-size:14px;line-height:1.1;padding:6px 8px;box-shadow:0 3px 0 #a07f00}
+.r-end.wait{background:rgba(0,0,0,.3);box-shadow:none;color:#cfe3d6;font-size:11.5px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+.r-end.wait b{color:#f8d08f;font-size:13px}
+.r-end[disabled]{font-size:11px}
+
+/* masadaki mini kartlar: daha gerçek kart görünümü */
+.lp-g .mp{border:2px solid #fffdf6;outline:1px solid color-mix(in srgb,var(--c) 45%,#000);outline-offset:-1px;border-radius:7px;
+  background:linear-gradient(180deg,#fffdf7 0%,#f4ecd9 100%)}
+.lp-g .mp b{border-radius:4px 4px 0 0;text-align:left;border-bottom:0}
+.lp-g .mp.top{box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 3px 6px rgba(0,0,0,.4)}
+
+/* ödeme ekranı (yatay) */
+.modal.sheet{max-width:none;width:100%;height:100%;max-height:none;border-radius:0;padding:8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));gap:8px;background:#0f4a33}
+.veil:has(.modal.sheet){padding:0}
+.pay-top{display:flex;gap:10px;align-items:center}
+.pay-top .pt{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.pay-top .pt > b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{position:relative;height:22px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#c99a00,var(--gold));border-radius:99px;transition:width .2s}
+.meter span{position:relative;display:block;font-size:11.5px;line-height:22px;padding:0 10px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pay-top .pa{display:flex;gap:6px;flex:0 0 auto}
+.pay-top .pa button{min-height:40px;padding:6px 12px;font-size:14px}
+.pay-body{flex:1;min-height:0;display:flex;gap:10px}
+.pay-body h4{margin:0 0 5px;font-size:11px;letter-spacing:.12em;color:#e9d8b0;display:flex;gap:6px}
+.pay-body h4 span{color:#f8d08f}
+.pbank{flex:0 0 min(250px, 32%);display:flex;flex-direction:column;min-height:0}
+.pbs{display:flex;flex-wrap:wrap;gap:7px;padding:2px;overflow-y:auto;align-content:flex-start}
+.pb{width:68px;min-height:0;height:50px;padding:0;border-radius:7px;background:var(--m);color:var(--d);border:2px solid var(--d);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.pb b{font-size:18px;font-weight:900}.pb small{font-size:7.5px;font-weight:800;letter-spacing:.06em;margin-top:2px;max-width:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pb.on,.pr.on{outline:3px solid var(--gold);outline-offset:1px;transform:translateY(-2px)}
+.ptable{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+.pgs{display:flex;flex-wrap:wrap;gap:8px;overflow-y:auto;align-items:flex-start;align-content:flex-start;padding:2px 2px 4px}
+.pg{flex:0 0 128px;border-radius:9px;background:#fffdf6;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid #fffdf6}
+.pg.full{box-shadow:0 0 0 2px var(--gold),0 2px 6px rgba(0,0,0,.35)}
+.pg .ph{background:var(--c);color:var(--k);font-size:10.5px;font-weight:800;padding:3px 7px;border-radius:6px 6px 0 0}
+.pr{display:flex;width:100%;min-height:0;height:32px;border-radius:0;padding:0 7px;background:transparent;color:#1d1d1b;border:0;border-top:1px solid rgba(0,0,0,.08);align-items:center;justify-content:space-between;font-size:11px;font-weight:700;box-shadow:none}
+.pr span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr b{font-weight:900;flex:0 0 auto;margin-left:4px}
+.pr.on{background:color-mix(in srgb,var(--gold) 40%,#fff);outline-offset:-3px;transform:none}
+.pr.jk span{color:#6b5a2a}
+.pr.bld{background:#eef6ef}
+.pr[disabled]{opacity:.45}
+
 </style></head><body><div id="app"></div>
 <script>
 // ===== OYUN MOTORU: Monopoly Deal kuralları (+ ev kuralı: yerdeki tapuyu başka renge taşımak 1 hamle) =====
@@ -1832,33 +1926,73 @@ function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
   const W = window.innerWidth, Hh = window.innerHeight;
-  const opps = `<div class="lp-opps${order.length > 2 ? ' many' : ''}" data-sk="opps">${order.map(lpOpp).join('')}</div>`;
-  let mine = '';
+  // sol ray: rakipler
+  const opps = order.map(i => {
+    const p = s.players[i];
+    const kx = cb(() => openModal({ type: 'opp', seat: i }));
+    const gs = p.stacks.map(st => lpGrp(st, i)).join('') || '<span class="lp-empty">Tapu yok</span>';
+    return `<section class="r-op${s.turn === i ? ' turn' : ''}"><header data-k="${kx}" role="button" tabindex="0">
+      <span class="av">${esc((p.name || '?')[0].toUpperCase())}</span><b class="nm">${esc(p.name)}</b>${lpDots(p)}<span class="hc" title="Elindeki kart">🂠${p.hand.length}</span><span class="exp">⤢</span></header>
+      <div class="r2">${lpCoins(p, 'six')}<span class="tot">${bankTotal(p)}M</span></div>
+      <div class="gs" data-sk="g${i}">${gs}</div></section>`;
+  }).join('');
+  const feed = s.log.slice(-3).reverse().map(l => `<p>${esc(l)}</p>`).join('');
+  const rail = `<aside class="r-rail" data-sk="rail">${opps}<div class="r-feed" data-k="${cb(() => openModal({ type: 'log' }))}" role="button">${feed}</div></aside>`;
+  // üst satır
+  const dots = [0, 1, 2].map(i => `<i class="${i < s.playsLeft ? 'on' : ''}"></i>`).join('');
+  const mine = s.turn === my;
+  const showStatus = s.phase === 'over' || s.pending || s.phase === 'discard';
+  const hdr = `<div class="r-hdr"><span class="turnp${mine ? '' : ' other'}">${mine ? 'Sıra sende' : 'Sıra: ' + esc(s.players[s.turn].name)}</span>
+    <span class="dots">${dots}</span><span class="r-msg">${showStatus ? statusHTML().replace(/<[^>]+>/g, ' ') : (mine ? `${s.playsLeft} hamle kaldı` : (s.last ? lastText(s.last) : ''))}</span>
+    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}
+    <button class="ghost lp-menu" aria-label="Menü" data-k="${cb(() => openModal({ type: 'menu' }))}">≡</button></div>`;
+  // masa
+  const top1 = s.discard.length ? s.discard[s.discard.length - 1] : null;
+  const center = `<div class="r-center"><div class="piles"><div class="deck"></div>${top1 != null ? `<div class="disc">${cardHTML(top1)}</div>` : '<div class="disc empty"></div>'}</div><span>Deste ${s.deck.length}</span></div>`;
+  let table = '', hand = '';
   if (!spectator) {
     const p = me();
     const gs = p.stacks.map(st => lpGrp(st, my)).join('') || '<span class="lp-empty">Henüz tapu açmadın. Elinden bir tapuya dokun.</span>';
-    mine = `<div class="lp-mine${s.turn === my ? ' active' : ''}"><span class="lbl">SENİN MASAN ${lpDots(p)}</span>
-      <div class="bank"><div class="tot">${bankTotal(p)}M<small>BANKA</small></div>${lpCoins(p, 'm')}</div><div class="gs" data-sk="gme">${gs}</div></div>`;
-  }
-  const L = s.last;
-  const showStatus = s.phase === 'over' || s.pending || s.turn !== my || s.phase === 'discard';
-  const st = showStatus ? statusHTML() : (L ? `<div class="lastl">${lastText(L)}</div>` : '<div class="lastl">Sıra sende.</div>');
-  const dots = [0, 1, 2].map(i => `<i class="${i < s.playsLeft ? 'on' : ''}"></i>`).join('');
-  let endBtn = '';
-  if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary lp-end" disabled>7'den fazla kart: önce oyna</button>` : `<button class="primary lp-end" data-k="${cb(() => send({ t: 'end' }))}">Sırayı bitir</button>`;
-  else endBtn = `<div class="lp-turn">Sıra: <b>${esc(s.players[s.turn].name)}</b></div>`;
-  const side = `<div class="lp-side"><div class="deck" title="Deste"><em>${s.deck.length}</em></div>
-    <div class="col">${st}<div class="pl">Hamle <span class="dots">${dots}</span>${app.netStatus === 'down' ? '<span class="down">bağlantı yok</span>' : ''}</div>${endBtn}</div>
-    <button class="ghost lp-menu" aria-label="Menü" data-k="${cb(() => openModal({ type: 'menu' }))}">≡</button></div>`;
-  let hand = '';
-  if (!spectator) {
-    const p = me(), k = p.hand.length;
-    const cw = Math.round(Math.max(58, Math.min(104, Hh * 0.25)));
-    const avail = W - 40;
-    const gap = k > 1 ? Math.round(Math.max(-cw * 0.72, Math.min(6, (avail - cw * k) / (k - 1)))) : 0;
-    hand = `<div class="lp-hand" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
-  }
-  return `<div class="game lp">${opps}<div class="lp-mid">${mine}${side}</div>${hand}</div>`;
+    table = `<div class="r-table"><div class="bankcol"><div class="tot">${bankTotal(p)}M</div>${lpCoins(p, 'm')}<div class="sets">${lpDots(p)} set</div></div><div class="gs gme" data-sk="gme">${gs}</div>${center}</div>`;
+    const k = p.hand.length;
+    const endW = 112;
+    const cw = Math.round(Math.max(56, Math.min(118, Hh * 0.29)));
+    const avail = W - 230 - endW - 30;
+    const gap = k > 1 ? Math.round(Math.max(-cw * 0.74, Math.min(6, (avail - cw * k) / (k - 1)))) : 0;
+    let endBtn;
+    if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary r-end" disabled>7'den fazla kart:<br>önce oyna</button>` : `<button class="primary r-end" data-k="${cb(() => send({ t: 'end' }))}">Sırayı<br>bitir</button>`;
+    else endBtn = `<div class="r-end wait">Sıra<br><b>${esc(s.players[s.turn].name)}</b></div>`;
+    hand = `<div class="r-hand" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div>${endBtn}</div>`;
+  } else table = `<div class="r-table">${center}</div>`;
+  return `<div class="game lp2">${rail}<main class="r-main">${hdr}${table}${hand}</main></div>`;
+}
+function payLand() {
+  const s = S(), pd = s.pending, p = me(), sel = app.ui.sel;
+  const total = Engine.assetTotal(p);
+  const sum = [...sel].reduce((x, id) => x + C(id).v, 0);
+  const valid = sum >= pd.amount || sum >= total;
+  const toggle = id => cb(() => { sel.has(id) ? sel.delete(id) : sel.add(id); render(); });
+  const jsn = p.hand.filter(id => Engine.isAct(id, 'jsn')).length;
+  const bank = p.bank.slice().sort((a, b) => C(a).v - C(b).v).map(id => {
+    const c = C(id), v = c.v, nm = c.k === 'money' ? 'MİLYON' : (c.k === 'act' ? Engine.ACTS[c.a].name : c.k === 'rent' ? 'Kira' : 'Kart');
+    return `<button class="pb${sel.has(id) ? ' on' : ''}" style="--m:${MONEY_TINT[v] || '#eee'};--d:${MONEY_INK[v] || '#333'}" data-k="${toggle(id)}"><b>${v}M</b><small>${esc(nm)}</small></button>`;
+  }).join('');
+  const table = p.stacks.map(st => {
+    const col = COLORS[st.color], done = Engine.complete(st);
+    const rows = st.cards.map(id => {
+      const c = C(id), v = c.v, can = v > 0;
+      return `<button class="pr${sel.has(id) ? ' on' : ''}${c.k === 'wild' ? ' jk' : ''}" ${can ? `data-k="${toggle(id)}"` : 'disabled'}><span>${esc(c.k === 'wild' ? '⇅ Joker' : c.name)}</span><b>${v}M</b></button>`;
+    }).join('') + [['house', 'Ev'], ['hotel', 'Otel']].filter(([f]) => st[f] != null).map(([f, nm]) => `<button class="pr bld${sel.has(st[f]) ? ' on' : ''}" data-k="${toggle(st[f])}"><span>${nm}</span><b>${C(st[f]).v}M</b></button>`).join('');
+    return `<div class="pg${done ? ' full' : ''}" style="--c:${col.hex};--k:${col.ink}"><div class="ph">${col.n}${done ? ' ✓' : ''}</div>${rows}</div>`;
+  }).join('');
+  const pct = Math.min(100, Math.round(100 * sum / Math.max(1, Math.min(pd.amount, total))));
+  const kAuto = cb(() => { app.ui.sel = new Set(Bot.choosePayment(p, pd.amount)); render(); });
+  const kPay = cb(() => send({ t: 'pay', cards: [...sel] }));
+  return `<div class="pay-top"><div class="pt"><b>${describePending(s)}</b>
+      <div class="meter"><i style="width:${pct}%"></i><span>Seçilen <b>${sum}M</b> / borç <b>${pd.amount}M</b>${total < pd.amount ? ` · varlığın ${total}M, hepsini vermelisin` : ' · para üstü verilmez'}</span></div></div>
+    <div class="pa">${jsn ? `<button class="danger" data-k="${cb(() => send({ t: 'jsn' }))}">✋ Reddet (${jsn})</button>` : ''}<button data-k="${kAuto}">Otomatik</button><button class="primary" ${valid ? '' : 'disabled'} data-k="${kPay}">${sum ? `${sum}M öde` : 'Öde'}</button></div></div>
+    <div class="pay-body"><section class="pbank"><h4>Banka <span>${bankTotal(p)}M</span></h4><div class="pbs">${bank || '<span class="muted">boş</span>'}</div></section>
+    <section class="ptable"><h4>Masa <span>${propValue(p)}M</span></h4><div class="pgs">${table || '<span class="muted">boş</span>'}</div></section></div>`;
 }
 function oppModal(m) {
   const s = S(), my = app.mySeat, n = s.players.length;
@@ -2065,7 +2199,7 @@ function modalHTML() {
   try { body = renderModal(m); } catch (e) { console.error(e); body = '<h3>Bir hata oluştu</h3>'; }
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
-  return `<div class="veil" data-k="${kClose}"><div class="modal" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
+  return `<div class="veil" data-k="${kClose}"><div class="modal${isLand() && m.type === 'respond' && S() && S().pending && S().pending.stage !== 'actor' && S().pending.kind !== 'steal' ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
@@ -2083,7 +2217,7 @@ function renderModal(m) {
     return `<div class="win">🏆 ${pname(s.winner)} kazandı!</div><div class="muted" style="text-align:center">${s.turnNo}. turda ${s.target || 3} tam set tamamlandı.</div>
       <div class="row" style="justify-content:center">${app.local || app.isHost ? `<button class="primary" data-k="${kAgain}">Yeniden oyna</button>` : ''}<button data-k="${cb(() => { app.ui.modal = null; goHome(); })}">Ana sayfa</button></div>`;
   }
-  if (m.type === 'respond') return respondModal();
+  if (m.type === 'respond') { const pd = s.pending; if (isLand() && pd && pd.stage !== 'actor' && pd.kind !== 'steal') return payLand(); return respondModal(); }
   if (m.type === 'discard') return discardModal();
   if (m.type === 'move') return moveModal(m);
   if (m.type === 'set') return setModal(m);
