@@ -2643,20 +2643,19 @@ function tryJoin(g) {
 }
 function publicList() {
   const f = app.flt, mineCodes = new Set(app.myGames.map(g => g.code));
-  const all = app.lobbies.filter(g => !mineCodes.has(g.code) && !(g.uids || []).includes(myUid));
-  const L = all.filter(g => (!f.max || maxOf(g) === f.max) && (!f.target || (g.target || 3) === f.target) && (f.dup < 0 || (g.dupSets !== false) === !!f.dup) && (f.rail < 0 || !!g.railBuild === !!f.rail) && (!f.open || (g.status === 'lobby' && (g.players || []).length < maxOf(g))));
+  const all = app.lobbies.filter(g => !mineCodes.has(g.code) && !(g.uids || []).includes(myUid) && g.status === 'lobby' && (g.players || []).length < maxOf(g));
+  const L = all.filter(g => (!f.max || maxOf(g) === f.max) && (!f.target || (g.target || 3) === f.target) && (f.dup < 0 || (g.dupSets !== false) === !!f.dup) && (f.rail < 0 || !!g.railBuild === !!f.rail));
   const chip = (key, val, label) => `<button data-f="${key}" data-v="${val}" class="${f[key] === val ? 'on' : ''}">${label}</button>`;
   const kF = cb(e => { const b = e.target.closest('button[data-f]'); if (!b) return; const key = b.dataset.f, v = key === 'open' ? b.dataset.v === 'true' : +b.dataset.v; app.flt = { ...app.flt, [key]: v }; render(); });
-  const nAct = (f.max ? 1 : 0) + (f.target ? 1 : 0) + (f.dup >= 0 ? 1 : 0) + (f.rail >= 0 ? 1 : 0) + (f.open ? 1 : 0);
+  const nAct = (f.max ? 1 : 0) + (f.target ? 1 : 0) + (f.dup >= 0 ? 1 : 0) + (f.rail >= 0 ? 1 : 0);
   const filters = `<details class="fltw"${app.fltOpen ? ' open' : ''} ontoggle="app.fltOpen=this.open"><summary>Filtrele${nAct ? ` (${nAct})` : ''}</summary><div class="flt" data-k="${kF}">
     <div class="fr"><span>Kişi</span>${chip('max', 0, 'Hepsi')}${[2, 3, 4, 5].map(n => chip('max', n, n)).join('')}</div>
     <div class="fr"><span>Set</span>${chip('target', 0, 'Hepsi')}${[2, 3, 4, 5].map(n => chip('target', n, n)).join('')}</div>
     <div class="fr"><span>Aynı renkten 2. set</span>${chip('dup', -1, 'Hepsi')}${chip('dup', 1, 'Sayılır')}${chip('dup', 0, 'Sayılmaz')}</div>
-    <div class="fr"><span>İstasyon/İdare'ye ev-otel</span>${chip('rail', -1, 'Hepsi')}${chip('rail', 1, 'Kurulabilir')}${chip('rail', 0, 'Kurulamaz')}</div>
-    <div class="fr">${chip('open', false, 'Tüm oyunlar')}${chip('open', true, 'Sadece katılınabilir')}</div></div></details>`;
+    <div class="fr"><span>İstasyon/İdare'ye ev-otel</span>${chip('rail', -1, 'Hepsi')}${chip('rail', 1, 'Kurulabilir')}${chip('rail', 0, 'Kurulamaz')}</div></div></details>`;
   const item = g => {
     const n = (g.players || []).length, mx = maxOf(g), started = g.status !== 'lobby', full = n >= mx;
-    const st = started ? '<span class="gst bad">Başladı</span>' : full ? '<span class="gst bad">Dolu</span>' : '<span class="gst ok">Lobide</span>';
+    const st = '';
     const host = (g.players || [])[0];
     return `<div class="gitem${started || full ? ' off' : ''}" data-k="${cb(() => tryJoin(g))}" role="button">
       <div class="gl"><div class="gt"><span class="code">${esc(g.code)}</span> ${host ? `<b>${esc(host.name)}</b>` : ''} ${st}</div>
