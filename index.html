@@ -653,6 +653,8 @@ const Engine = (() => {
   const assetTotal = p => assetIds(p).reduce((a, id) => a + C(id).v, 0);
   const colorOnTable = (p, id) => { const f = findOnTable(p, id); return f ? f.st.color : null; };
 
+  // ev kuralı: hamle hakkı varken elde 7'den fazla kart varsa sıra bitirilemez
+  const mustPlay = s => s.phase === 'play' && !s.pending && s.playsLeft > 0 && s.players[s.turn].hand.length > 7;
   function hasFreeMove(p) {
     return p.stacks.some(st => !complete(st) && st.cards.some(id => C(id).k === 'wild'));
   }
@@ -747,7 +749,10 @@ const Engine = (() => {
       log(s, `${p.name} ${need} kart attı.`);
       nextTurn(s); return OK;
     }
-    if (a.t === 'end') { log(s, `${p.name} sırasını bitirdi.`); endTurn(s); return OK; }
+    if (a.t === 'end') {
+      if (s.playsLeft > 0 && p.hand.length > 7) return err(`Elinde ${p.hand.length} kart var. 7'den fazla kartın varken sıranı bitiremezsin: önce kalan ${s.playsLeft} hamleni yap.`);
+      log(s, `${p.name} sırasını bitirdi.`); endTurn(s); return OK;
+    }
 
     if (a.t === 'move') {
       const id = a.card, f = findOnTable(p, id);
@@ -921,7 +926,7 @@ const Engine = (() => {
   }
 
   return { COLORS, CK, CARDS, ACTS, C, isRainbow, isAct, wildOk, complete, rentFor, completeColors, countSets, findOnTable, assetIds, assetTotal, tableIds,
-    newGame, apply, whoActs, respondent, colorOnTable, hasFreeMove };
+    newGame, apply, whoActs, respondent, colorOnTable, hasFreeMove, mustPlay };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
 
@@ -1065,7 +1070,17 @@ const Bot = (() => {
       const junk = hand.filter(id => (C(id).k === 'act' || C(id).k === 'rent') && !isAct(id, 'jsn') && !isAct(id, 'dealbreaker')).sort((a, b) => C(a).v - C(b).v)[0];
       if (junk != null) return { t: 'bank', card: junk };
     }
-    return { t: 'end' };
+    return forcedPlay(s, seat) || { t: 'end' };
+  }
+
+  // elde 7'den fazla kart ve hamle hakkı varken sıra bitirilemez: en zararsız kartı oyna
+  function forcedPlay(s, seat) {
+    if (!E.mustPlay(s)) return null;
+    const p = s.players[seat], hand = p.hand;
+    const prop = hand.find(id => C(id).k === 'prop'); if (prop != null) return { t: 'prop', card: prop };
+    const wild = hand.find(id => C(id).k === 'wild'); if (wild != null) return { t: 'prop', card: wild, color: bestWildColor(p, wild) };
+    const bankable = hand.filter(id => C(id).k !== 'prop' && C(id).k !== 'wild').sort((a, b) => (isAct(a, 'jsn') - isAct(b, 'jsn')) || (C(a).v - C(b).v));
+    return bankable.length ? { t: 'bank', card: bankable[0] } : null;
   }
 
   // tek API: 'play' kısayolunu motorun beklediği biçime çevir
@@ -1081,7 +1096,7 @@ const Bot = (() => {
       return { t: 'pay', cards: choosePayment(s.players[seat], pd.amount) };
     }
     if (s.phase === 'discard') return play(s, seat);
-    return { t: 'end' };
+    return forcedPlay(s, seat) || { t: 'end' };
   }
   return { decide, fallback, choosePayment };
 })();
@@ -1315,7 +1330,7 @@ function homeHTML() {
       <li>Kartı tıkla: <b>bankaya koy</b> (para olarak), <b>tapu olarak aç</b> ya da <b>aksiyon olarak oyna</b>.</li>
       <li>Ödeme yaparken para üstü verilmez; banka ve masandaki kartlarla ödersin, elindekilerle değil.</li>
       <li><b>Reddet</b> sana yapılan hamleyi iptal eder; karşı taraf da Reddet ile karşılık verebilir.</li>
-      <li>Sıra sonunda elinde en fazla <b>7 kart</b> kalır.</li>
+      <li>Sıra sonunda elinde en fazla <b>7 kart</b> kalır. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin; önce hamlelerini yap.</li>
       <li><b>Ev kuralımız:</b> tam bir setten joker çıkarıp seti bozmak <b>1 hamle</b> sayılır. Henüz set olmamış bir gruptaki jokerin rengini sıran boyunca ücretsiz değiştirebilirsin.</li>
       <li>Sadece Renkli Joker'den oluşan bir yığın için kira istenemez. Setten kart çıkınca aynı renkte boşta duran tapun otomatik sete geçer. Set yine de bozulursa ev ve otel bankana <b>para olarak</b> geçer.</li>
     </ul></div>
@@ -1381,7 +1396,7 @@ function gameHTML() {
     <span class="spacer"></span>
     <button data-k="${cb(() => openModal({ type: 'log' }))}" class="ghost">Kayıt</button>
     <button data-k="${cb(() => openModal({ type: 'rules' }))}" class="ghost">Kurallar</button>
-    ${myTurnFree() ? `<button class="primary" data-k="${kEnd}">Sırayı bitir</button>` : ''}
+    ${myTurnFree() ? (Engine.mustPlay(s) ? `<button class="primary" disabled title="Elinde 7'den fazla kart var: önce hamlelerini tamamla">Sırayı bitir</button>` : `<button class="primary" data-k="${kEnd}">Sırayı bitir</button>`) : ''}
   </div>`;
   const opps = `<div class="seats n${order.length}">${order.map(i => oppHTML(i)).join('')}</div>`;
   let mineHtml = '';
@@ -1514,6 +1529,7 @@ function statusHTML() {
     return `<div class="status ${resp === app.mySeat ? '' : 'wait'}">${d}${extra}${resp === app.mySeat ? ' · Yanıt sende!' : ' · yanıt bekleniyor…'}</div>`;
   }
   if (s.phase === 'discard') return `<div class="status ${w === app.mySeat ? '' : 'wait'}">${pname(s.turn)} fazla kartlarını atıyor…</div>`;
+  if (w === app.mySeat && Engine.mustPlay(s)) return `<div class="status">Elinde ${me().hand.length} kart var: sırayı bitirmeden önce kalan ${s.playsLeft} hamleni yapmalısın.</div>`;
   if (w === app.mySeat) return s.playsLeft > 0 ? `<div class="status">Sıra sende: ${s.playsLeft} hamle hakkın var.</div>` : `<div class="status">Hamle hakkın bitti. Joker tapularını düzenleyip "Sırayı bitir"e bas.</div>`;
   return `<div class="status wait">${pname(w)} oynuyor…</div>`;
 }
@@ -1575,7 +1591,7 @@ function renderModal(m) {
 function homeRules() {
   return `<ul class="rules">
     <li><b>Kazanmak:</b> seçilen sayıda (varsayılan 3) tam set. Ev kuralı: aynı renkten ikinci bir tam set de sayılır (lobide resmi kurala çevrilebilir).</li>
-    <li><b>Sıra:</b> 2 kart çek (el boşsa 5), en fazla 3 kart oyna, sonunda en fazla 7 kart tut.</li>
+    <li><b>Sıra:</b> 2 kart çek (el boşsa 5), en fazla 3 kart oyna, sonunda en fazla 7 kart tut. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin.</li>
     <li><b>Para/Aksiyon:</b> aksiyon kartlarını para olarak bankaya koyabilirsin; tapular bankaya konamaz.</li>
     <li><b>Ödeme:</b> banka ve masandan; para üstü yok. Yetmiyorsa her şeyini verirsin.</li>
     <li><b>Kira:</b> iki renkli kira herkesten, Joker Kira tek rakipten. İkiye Katla kira kartıyla birlikte oynanır ve ayrıca 1 hamle sayılır.</li>
