@@ -1087,6 +1087,7 @@ const TX_RULES = [
   [new RegExp(': boştaki ' + '([^<>]+?) ' + TXC + ' setine geçti\\.', 'g'), ': loose $1 moved into the $2 set.'],
   [new RegExp(TXN + ' jokeri ' + TXC + ' rengine taşıdı', 'g'), '$1 moved a wildcard to $2'],
   [new RegExp(TXN + ' oynadı: ', 'g'), '$1 played: '],
+  [/Botlar bu cihazda (\d+) oyundan öğrendi \((\d+) hamle\)\./g, 'Bots on this device have learned from $1 games ($2 moves).'],
   [/Kimden (\d+)M kira isteyeceksin\?/g, 'Who should pay $1M rent?'],
   [/ oynadı: /g, ' played: '], [/ tapu açtı: /g, ' played a property: '], [/ bankaya koydu: /g, ' banked: '],
   [new RegExp(' jokeri ' + TXC + ' rengine taşıdı', 'g'), ' moved a wildcard to $1'],
@@ -1842,20 +1843,25 @@ const BotPro = (() => {
   const cloneS = typeof structuredClone === 'function' ? o => structuredClone(o) : o => JSON.parse(JSON.stringify(o));
   const others = (s, seat) => s.players.map((_, i) => i).filter(i => i !== seat);
   const JSN_KEEP = 22;
-  const TUNE = (typeof process !== 'undefined' && process.env && process.env.TUNE) ? JSON.parse(process.env.TUNE) : {};
+  // Ayarlanabilir ağırlıklar. DEF: kendi kendine oynayarak bulunan en iyi değerler (tune.js).
+  const DEF = { set: 260, near: 120, partW: 150, partExp: 1.4, oppPartial: 0.55, rentW: 4, bankW: 4, cushN: 7, cushS: 5, cushM: 4, risk: 3,
+    wmax: 1.0, wsum: 0.2, leadMul: 2.2, leadAdd: 250, d2: 6, bankActMin: 10,
+    hDb: 48, hJsn: 22, hSly: 15, hForced: 11, hDebt: 6, hRent: 4, hProp: 6, jsnKeep: 22 };
+  const ENV = (typeof process !== 'undefined' && process.env && process.env.TUNE) ? JSON.parse(process.env.TUNE) : {};
+  let TUNE = Object.assign({}, DEF, ENV);
 
   // ---------- pozisyon puanı ----------
-  const HANDV = { jsn: JSN_KEEP, dealbreaker: 48, sly: 15, forced: 11, debt: 6, birthday: 4, passgo: 4, house: 4, hotel: 4, double: 3 };
+  const HANDV = () => ({ jsn: TUNE.hJsn, dealbreaker: TUNE.hDb, sly: TUNE.hSly, forced: TUNE.hForced, debt: TUNE.hDebt, birthday: 4, passgo: 4, house: 4, hotel: 4, double: 3 });
   function handCardValue(s, p, id) {
     const c = C(id);
     if (c.k === 'money') return c.v * 0.4; // eldeki para ödemede kullanılamaz: bankaya koymak hep daha iyi
     if (c.k === 'act') {
-      if (c.a === 'dealbreaker' && !s.players.some(q => q !== p && q.stacks.some(complete))) return 34; // Haciz en değerli kart: neredeyse hiç bankaya konmaz
+      if (c.a === 'dealbreaker' && !s.players.some(q => q !== p && q.stacks.some(complete))) return TUNE.hDb * 0.7; // Haciz en değerli kart: neredeyse hiç bankaya konmaz
       if ((c.a === 'house' || c.a === 'hotel') && !p.stacks.some(complete)) return c.v * 1.2;
-      return Math.max(HANDV[c.a] || 3, c.v * 1.5);
+      return Math.max(HANDV()[c.a] || 3, c.v * 1.5);
     }
-    if (c.k === 'rent') return 4;
-    return 6; // tapu / joker elde
+    if (c.k === 'rent') return TUNE.hRent;
+    return TUNE.hProp; // tapu / joker elde
   }
   function stackValue(s, st, doneColors) {
     const col = COLORS[st.color], size = col.size, n = Math.min(st.cards.length, size);
@@ -1865,31 +1871,31 @@ const BotPro = (() => {
     if (!st.cards.some(id => C(id).k === 'prop')) return -14; // tek başına joker: rakip Tapu Devri ile kolayca alır, açılmaz
     const dupPenalty = (s.dupSets === false && doneColors.has(st.color)) ? 0.2 : 1;
     const frac = n / size;
-    return (real ? 1 : 0.6) * Math.pow(frac, 1.4) * 150 * w * dupPenalty * (size - n === 1 ? 1.25 : 1);
+    return (real ? 1 : 0.6) * Math.pow(frac, TUNE.partExp) * TUNE.partW * w * dupPenalty * (size - n === 1 ? 1.25 : 1);
   }
   function posScore(s, p, isMe) {
     const target = s.target || 3;
     const doneStacks = p.stacks.filter(complete);
     const doneColors = new Set(doneStacks.map(st => st.color));
     const done = E.countSets(p, s);
-    let sc = done * 260 + (done >= target - 1 ? 120 : 0);
+    let sc = done * TUNE.set + (done >= target - 1 ? TUNE.near : 0);
     // en iyi yarım grup (renk başına)
     const bestPartial = {};
     p.stacks.forEach(st => { if (complete(st)) return; const v = stackValue(s, st, doneColors); bestPartial[st.color] = Math.max(bestPartial[st.color] || 0, v); });
     const partials = Object.values(bestPartial).sort((a, b) => b - a);
-    const pw = isMe ? 1 : (TUNE.oppPartial ?? 0.55);
+    const pw = isMe ? 1 : TUNE.oppPartial;
     partials.forEach((v, i) => { sc += pw * v * (i < target - done ? 1 : 0.35); });
     // kira gücü
-    doneStacks.forEach(st => { const col = COLORS[st.color]; sc += (col.rent[col.size - 1] + (st.house != null ? 3 : 0) + (st.hotel != null ? 4 : 0)) * 4; });
+    doneStacks.forEach(st => { const col = COLORS[st.color]; sc += (col.rent[col.size - 1] + (st.house != null ? 3 : 0) + (st.hotel != null ? 4 : 0)) * TUNE.rentW; });
     // banka
     const bank = p.bank.reduce((x, id) => x + C(id).v, 0);
-    sc += Math.min(bank, 12) * 4 + Math.max(0, Math.min(bank, 25) - 12) * 1.5 + Math.max(0, bank - 25) * 0.5;
+    sc += Math.min(bank, 12) * TUNE.bankW + Math.max(0, Math.min(bank, 25) - 12) * 1.5 + Math.max(0, bank - 25) * 0.5;
     // Engin'in kuralı: oyun başında küçük paraları bankaya koy ki tapular ödemede boşa gitmesin.
     // Bankadaki kart adedi (bozuk para) ve ilk birkaç milyon ekstra değerli; masada tapu varken banka boşsa risk.
     const money = p.bank.filter(id => C(id).k === 'money'), nBank = money.length, small = money.filter(id => C(id).v <= 2).length;
-    sc += (TUNE.cushN ?? 7) * Math.min(nBank, 4) + (TUNE.cushS ?? 5) * Math.min(small, 3) + (TUNE.cushM ?? 4) * Math.min(bank, 6);
+    sc += TUNE.cushN * Math.min(nBank, 4) + TUNE.cushS * Math.min(small, 3) + TUNE.cushM * Math.min(bank, 6);
     const exposed = p.stacks.filter(st => !complete(st)).reduce((x, st) => x + st.cards.length, 0);
-    if (isMe) sc -= (TUNE.risk ?? 3) * exposed * Math.max(0, 5 - bank);
+    if (isMe) sc -= TUNE.risk * exposed * Math.max(0, 5 - bank);
     // el
     if (isMe) sc += p.hand.reduce((x, id) => x + handCardValue(s, p, id), 0);
     return sc;
@@ -1904,10 +1910,10 @@ const BotPro = (() => {
       let v = posScore(s, p, false);
       // kazanmaya bir set kalan rakip: herkes ona yüklenir (setlerini Haciz'le al, tapularını çal, kirayı ondan iste)
       const d = E.countSets(p, s);
-      if (d >= target - 1) v = v * 2.2 + 250 * d;
+      if (d >= target - 1) v = v * TUNE.leadMul + TUNE.leadAdd * d;
       mx = Math.max(mx, v); sum += v;
     });
-    return my - (TUNE.wmax ?? 1.0) * mx - (TUNE.wsum ?? 0.2) * sum;
+    return my - TUNE.wmax * mx - TUNE.wsum * sum;
   }
 
   // ---------- simülasyon ----------
@@ -1995,12 +2001,36 @@ const BotPro = (() => {
   }
 
   // bazı hamlelerin değeri rakibin Reddet ihtimaline göre biraz düşürülür (rakibin elini görmeyiz)
+  // İnsan oyunlarından öğrenme: kurucunun tarayıcısında biriken istatistiklere göre küçük bir eğilim (yalnızca tarayıcıda)
+  function learnBonus(s, seat, a) {
+    const L = (typeof BotLearn !== 'undefined') ? BotLearn : null;
+    if (!L || TUNE.noLearn) return 0;
+    return L.bonus(s, seat, a);
+  }
+  // Rakip takibi: Reddet kartlarından hangileri görüldü (atılan deste, bankalar, benim elim)?
+  // Kalan görünmeyen Reddet'lerin, hedefin elinde olma olasılığını hesaplar. Rakibin elini görmez.
+  const JSN_TOTAL = (E.ACTS && E.ACTS.jsn && E.ACTS.jsn.n) || 3;
+  function jsnProb(s, me, t) {
+    const isJ = id => isAct(id, 'jsn');
+    let seen = s.discard.filter(isJ).length + s.players[me].hand.filter(isJ).length;
+    s.players.forEach(q => { seen += q.bank.filter(isJ).length; });
+    const rem = Math.max(0, JSN_TOTAL - seen);
+    if (!rem) return 0;
+    let unseen = s.deck.length; s.players.forEach((q, i) => { if (i !== me) unseen += q.hand.length; });
+    if (unseen <= 0) return 0;
+    const h = s.players[t].hand.length;
+    let pNone = 1; for (let k = 0; k < h; k++) pNone *= Math.max(0, (unseen - rem - k) / (unseen - k));
+    return 1 - pNone;
+  }
   function jsnRisk(s, a) {
     if (a.t !== 'play') return 0;
     const c = C(a.card); if (c.k !== 'act' && c.k !== 'rent') return 0;
-    const tgts = a.target != null ? [a.target] : others(s, s.turn);
-    const handSum = tgts.reduce((x, t) => x + s.players[t].hand.length, 0);
-    return Math.min(0.5, 0.04 * handSum); // kabaca: elde ne kadar kart varsa o kadar risk
+    if (c.k === 'act' && (c.a === 'passgo' || c.a === 'house' || c.a === 'hotel')) return 0;
+    const me = s.turn;
+    const tgts = a.target != null ? [a.target] : others(s, me);
+    if (TUNE.oldRisk) { const hs = tgts.reduce((x, t) => x + s.players[t].hand.length, 0); return Math.min(0.5, 0.04 * hs); }
+    const pr = tgts.reduce((x, t) => x + jsnProb(s, me, t), 0) / Math.max(1, tgts.length);
+    return Math.min(0.85, pr * (TUNE.jsnRiskW ?? 0.9));
   }
 
   function play(s, seat) {
@@ -2024,11 +2054,12 @@ const BotPro = (() => {
       const risk = jsnRisk(s, a);
       v = base + (v - base) * (1 - risk) - (risk ? 1 : 0);
       if (a.t === 'move' && v - base < 4) continue; // gereksiz oynamayı önle
+      v += learnBonus(s, seat, a);
       scored.push({ a, v });
     }
     // 2. adım: en iyi birkaç hamle için, aynı sırada ardından gelecek en iyi hamleyi de düşün
     scored.sort((x, y) => y.v - x.v);
-    const depth2 = s._depth ? 0 : (TUNE.d2 ?? 6);
+    const depth2 = s._depth ? 0 : TUNE.d2;
     scored.forEach((o, i) => {
       let v = o.v;
       if (i < depth2) {
@@ -2044,7 +2075,7 @@ const BotPro = (() => {
     });
     const canEnd = !E.mustPlay(s);
     // 3 hamleyi doldurmak zorunda değil: hamle kartını bankaya koymak gibi küçük kazançlar için kart harcama
-    const need = best && best.t === 'bank' && C(best.card).k !== 'money' ? (TUNE.bankActMin ?? 10) : 1;
+    const need = best && best.t === 'bank' && C(best.card).k !== 'money' ? TUNE.bankActMin : 1;
     if (best && (bestV > base + need || !canEnd)) return best;
     if (!canEnd && cands.length) return cands.find(a => a.t !== 'move') || cands[0];
     return { t: 'end' };
@@ -2131,7 +2162,7 @@ const BotPro = (() => {
       }
       const gain = evalFor(st2, seat) - now;
       void j;
-      return gain > JSN_KEEP + 6 ? { t: 'jsn' } : { t: 'accept' };
+      return gain > TUNE.jsnKeep + 6 ? { t: 'jsn' } : { t: 'accept' };
     }
     // hedef benim
     let accept;
@@ -2141,18 +2172,21 @@ const BotPro = (() => {
     const st = cloneS(s); E.apply(st, seat, accept);
     // aynı hamlenin diğer hedeflerini dahil etmeden sadece kendi kaybım
     const loss = now - evalFor(st, seat);
-    const threshold = JSN_KEEP + 8;
+    const threshold = TUNE.jsnKeep + 8;
     if (pd.act === 'dealbreaker' || loss > threshold) return { t: 'jsn' };
     return accept;
   }
 
-  function decide(s, seat) {
+  function decide(s, seat, params) {
+    const keep = TUNE;
+    if (params) TUNE = Object.assign({}, DEF, params);
     try {
       const a = s.pending ? respond(s, seat) : play(s, seat);
       return a;
     } catch (e) { if (typeof console !== 'undefined') console.warn('BotPro hata', e); return null; }
+    finally { TUNE = keep; }
   }
-  return { decide, evalFor, payChoice };
+  return { decide, evalFor, payChoice, DEF, setDefaults: o => { Object.assign(DEF, o); TUNE = Object.assign({}, DEF, ENV); } };
 })();
 
 // Bot seçimi: oyun "kolay" ise eski bot, değilse güçlü bot
@@ -2165,6 +2199,55 @@ const BotPro = (() => {
   };
   B.fallback = (s, seat) => easyFallback(s, seat);
   if (typeof module !== 'undefined') module.exports = { BotPro, Bot: B };
+})();
+
+// ===== İNSAN OYUNLARINDAN ÖĞRENME =====
+// Botları çalıştıran tarayıcı (bot masası ya da online oyunun kurucusu), insan oyuncuların hamlelerini kaydeder.
+// Oyun bitince kazananın hamleleri 2 kat, diğerlerininki 1 kat sayılır. Bot, benzer durumda insanların
+// (özellikle kazananların) sık seçtiği hamle türlerine küçük bir eğilim kazanır. Kurallar ve sabit kurallar değişmez.
+const BotLearn = (() => {
+  const KEY = 'deal_learn_v1';
+  let db = null;
+  const load = () => { if (db) return db; try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {} if (!db || !db.c) db = { c: {}, n: 0, games: 0 }; return db; };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} };
+  const C = id => Engine.C(id);
+  const phase = s => (s.turnNo <= 3 * s.players.length ? 'e' : s.turnNo <= 8 * s.players.length ? 'm' : 'l');
+  function key(s, seat, a) {
+    if (!a) return null;
+    if (a.t === 'end') return s.playsLeft > 0 ? 'end-early' : null;
+    if (a.t === 'bank') { const c = C(a.card); return c.k === 'money' ? (c.v <= 2 ? 'bank-small' : 'bank-big') : 'bank-' + (c.k === 'act' ? c.a : c.k); }
+    if (a.t === 'prop') return C(a.card).k === 'wild' ? 'prop-wild' : 'prop';
+    if (a.t === 'move') return 'move';
+    if (a.t === 'play') { const c = C(a.card); if (c.k === 'rent') return 'rent' + ((a.doubles || []).length ? '-x2' : ''); return 'play-' + c.a; }
+    return null;
+  }
+  let buf = [];
+  function record(s, seat, a) {
+    if (!s || s.phase !== 'play' || s.pending || s.turn !== seat) return;
+    const p = s.players[seat]; if (!p || p.bot) return;
+    const k = key(s, seat, a); if (!k) return;
+    buf.push({ seat, ctx: phase(s), k });
+  }
+  function gameOver(s) {
+    if (!buf.length) return;
+    const d = load();
+    buf.forEach(r => { const w = r.seat === s.winner ? 2 : 1; const kk = r.ctx + '|' + r.k; d.c[kk] = (d.c[kk] || 0) + w; d.n += w; });
+    d.games++; buf = []; save();
+  }
+  function reset() { buf = []; }
+  // bonus: insanlar bu bağlamda bu tür hamleyi ortalamadan sık seçiyorsa +, az seçiyorsa −. Veri azken etkisiz.
+  function bonus(s, seat, a) {
+    const d = load(); if (d.n < 60) return 0;
+    const k = key(s, seat, a); if (!k) return 0;
+    const ctx = phase(s); let tot = 0, kinds = 0;
+    for (const kk in d.c) if (kk.startsWith(ctx + '|')) { tot += d.c[kk]; kinds++; }
+    if (tot < 30 || !kinds) return 0;
+    const share = (d.c[ctx + '|' + k] || 0) / tot, avg = 1 / kinds;
+    const conf = Math.min(1, d.n / 600);
+    return Math.max(-5, Math.min(5, 3 * Math.log((share + 0.01) / (avg + 0.01)))) * conf;
+  }
+  const stats = () => { const d = load(); return { moves: d.n, games: d.games }; };
+  return { record, gameOver, reset, bonus, stats };
 })();
 
 // ===== ARAYÜZ + ONLINE =====
@@ -2651,6 +2734,7 @@ function oppModal(m) {
 function menuModal() {
   return `<h3>Menü</h3><div class="opts">
     ${optBtn('Oyun kaydı', 'Tüm hamleler', () => openModal({ type: 'log' }))}
+    <div class="muted" style="font-size:12px">${(() => { try { const t = BotLearn.stats(); return `Botlar bu cihazda ${t.games} oyundan öğrendi (${t.moves} hamle).`; } catch (e) { return ''; } })()}</div>
     ${optBtn('Kurallar', '', () => openModal({ type: 'rules' }))}
     ${optBtn(LANG === 'en' ? 'Türkçe' : 'English', LANG === 'en' ? 'Dili değiştir' : 'Change language', () => { setLang(LANG === 'en' ? 'tr' : 'en'); app.ui.modal = null; render(); })}
     ${app.local ? '' : optBtn('Oyun kodu: ' + esc(app.code || ''), 'Arkadaşlarına bu kodu ver', () => {})}
@@ -3116,6 +3200,7 @@ function applyAuth(seat, a) {
   const st = clone(cur);
   const r = Engine.apply(st, seat, a);
   if (!r.ok) return r;
+  try { BotLearn.record(cur, seat, a); if (st.phase === 'over' && cur.phase !== 'over') BotLearn.gameOver(st); } catch (e) {}
   if (app.local) app.state = st; else { H.state = st; app.state = st; writeGame({ state: st, status: st.phase === 'over' ? 'over' : 'playing' }); }
   render(); scheduleBots();
   return r;
@@ -3138,6 +3223,7 @@ function scheduleBots() {
 
 // ---------- ÇEVRİMDIŞI ----------
 function startLocal() {
+  try { BotLearn.reset(); } catch (e) {}
   stopOnline();
   const names = LANG === 'en' ? ['Bot Alex', 'Bot Sam', 'Bot Mia', 'Bot Leo'] : ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const players = [{ uid: 'me', name: (app.name || 'Ben').trim(), bot: false }, ...names.slice(0, app.botCount).map((n, i) => ({ uid: 'bot' + i, name: n, bot: true }))];
@@ -3192,6 +3278,7 @@ function hostRemove(i) {
   H.players = players; writeGame({ players, uids: players.filter(p => !p.bot).map(p => p.uid) });
 }
 function hostStart() {
+  try { BotLearn.reset(); } catch (e) {}
   const players = H.players || app.game.players;
   if (players.length < 2) return;
   H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false, railBuild: !!app.game.railBuild, botLevel: 'hard' })); app.state = H.state;
@@ -3199,6 +3286,7 @@ function hostStart() {
   app.view = 'game'; render(); scheduleBots();
 }
 function hostRestart() {
+  try { BotLearn.reset(); } catch (e) {}
   const players = (H.state ? H.state.players : app.game.players).map(p => ({ uid: p.uid, name: p.name, bot: p.bot }));
   H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false, railBuild: H.state ? !!H.state.railBuild : !!app.game.railBuild, botLevel: 'hard' })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state }); render(); scheduleBots();
