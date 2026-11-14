@@ -2820,7 +2820,17 @@ function netShareHTML(code) {
 }
 
 // ---- son oyunlar (bu tarayıcıda) ----
-function loadMyGames() { try { app.myGames = JSON.parse(lsGet('td_games') || '[]'); } catch (e) { app.myGames = []; } }
+function loadMyGames() {
+  try { app.myGames = JSON.parse(lsGet('td_games') || '[]'); } catch (e) { app.myGames = []; }
+  // 3 gündür oynanmamış oyunlar silinir, listede gösterilmez
+  const STALE = 3 * 24 * 3600e3, now = Date.now();
+  const old = app.myGames.filter(g => now - (g.updated || 0) > STALE);
+  if (old.length) {
+    old.forEach(g => { try { localStorage.removeItem('td_host_' + g.code); } catch (e) {} });
+    app.myGames = app.myGames.filter(g => now - (g.updated || 0) <= STALE);
+    lsSet('td_games', JSON.stringify(app.myGames));
+  }
+}
 function rememberGame(g) {
   loadMyGames();
   const item = { code: g.code, status: g.status, players: (g.players || []).map(p => ({ name: p.name })), updated: Date.now(), hosting: g.host === myUid };
