@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Tapu Takas">
-<title>Tapu Takas</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Deal">
+<title>Deal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Rubik:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -1781,7 +1781,7 @@ function cardHTML(id, o = {}) {
     return `<div class="${cls} money" style="--m:${MONEY_TINT[c.v]};--d:${MONEY_INK[c.v]}"${k} title="${c.v}M para">
       <div class="inner"><div class="guil"></div>
         <div class="mc tl">${c.v}</div><div class="mc tr">${c.v}</div><div class="mc bl">${c.v}</div><div class="mc br">${c.v}</div>
-        <div class="mtop">TAPU TAKAS<br>BANKASI</div>
+        <div class="mtop">DEAL<br>BANKASI</div>
         <div class="medal"><div class="rose"></div><div class="face"><b>${c.v}</b><small>MİLYON</small></div></div>
         <div class="mword">${MONEY_WORD[c.v]} MİLYON</div>
       </div></div>`;
@@ -1817,7 +1817,7 @@ function cardHTML(id, o = {}) {
   return `<div class="${cls} act a-${c.a}" style="--m:${MONEY_TINT[c.v]}"${k} title="${A.name}: ${A.d}">${val}<div class="inner"><div class="hdr">HAMLE KARTI</div>
     <div class="disc"><div class="ico">${icon(c.a)}</div><span>${A.name}</span></div><div class="desc">${A.d}</div></div></div>`;
 }
-const backHTML = (size = 'sm') => `<div class="card ${size} back"><div class="inner"><span>TAPU<br>TAKAS</span></div></div>`;
+const backHTML = (size = 'sm') => `<div class="card ${size} back"><div class="inner"><span>DEAL</span></div></div>`;
 
 function stackHTML(st, size, o = {}) {
   const w = size === 'sm' ? 58 : 74, h = w * 1.42, off = size === 'sm' ? 20 : 27;
@@ -1925,7 +1925,7 @@ function homeHTML() {
   const lob = app.lobbies.filter(g => !(g.uids || []).includes(myUid)).slice(0, 8);
   const gameItem = (g, label) => `<div class="item"><span><span class="code">${esc(g.code)}</span> <span class="muted">· ${esc((g.players || []).map(p => p.name).join(', '))}</span></span><button ${disabled} data-k="${cb(() => label === 'Katıl' ? joinByCode(g.code) : openGame(g.code))}">${label}</button></div>`;
   return `<div class="home">
-    <div class="brand"><h1>TAPU TAKAS</h1><p>Monopoly Deal kurallarıyla arkadaşlarınla online kart oyunu. Seçilen sayıda tam set toplayan kazanır.</p></div>
+    <div class="brand"><h1>DEAL</h1><p>Monopoly Deal kurallarıyla arkadaşlarınla online kart oyunu. Seçilen sayıda tam set toplayan kazanır.</p></div>
     <div class="row"><label for="nameInput" class="muted">Adın</label><input id="nameInput" maxlength="16" placeholder="Örn. Engin" value="${esc(app.name)}"></div>
     <div class="grid2">
       <div class="panel"><h2>Online oyna</h2>${onlineMsg}${app.prefillCode ? `<div class="notice"><b class="code">${esc(app.prefillCode)}</b> oyununa davet edildin. Adını yaz ve <b>Katıl</b>'a bas.</div>` : ''}
@@ -1968,11 +1968,11 @@ function levelPicker(cur, fn) {
 }
 function railPicker(cur, fn) {
   const k = cb(e => { if (e.target.dataset.r) fn(e.target.dataset.r === '1'); });
-  return `<div class="row" data-k="${k}">İstasyon/İdare'ye ev-otel: <button data-r="0" class="${!cur ? 'primary' : 'ghost'}">Kurulamaz (resmi)</button><button data-r="1" class="${cur ? 'primary' : 'ghost'}">Kurulabilir</button></div>`;
+  return `<div class="row" data-k="${k}">İstasyon/İdare'ye ev-otel: <button data-r="0" class="${!cur ? 'primary' : 'ghost'}">Kurulamaz</button><button data-r="1" class="${cur ? 'primary' : 'ghost'}">Kurulabilir</button></div>`;
 }
 function dupPicker(cur, fn, dis = false) {
   const k = cb(e => { if (e.target.dataset.d && !dis) fn(e.target.dataset.d === '1'); });
-  return `<div class="row" data-k="${k}">Aynı renkten 2. set: <button ${dis ? 'disabled' : ''} data-d="1" class="${cur ? 'primary' : 'ghost'}">Sayılır</button><button ${dis ? 'disabled' : ''} data-d="0" class="${!cur ? 'primary' : 'ghost'}">Sayılmaz (resmi)</button></div>`;
+  return `<div class="row" data-k="${k}">Aynı renkten 2. set: <button ${dis ? 'disabled' : ''} data-d="1" class="${cur ? 'primary' : 'ghost'}">Sayılır</button><button ${dis ? 'disabled' : ''} data-d="0" class="${!cur ? 'primary' : 'ghost'}">Sayılmaz</button></div>`;
 }
 
 // ---------- LOBİ ----------
@@ -2087,10 +2087,11 @@ function landHTML() {
     const k = p.hand.length;
     const rw = W * 0.6 - 20;
     // kartlar üst üste binmeden yan yana sığsın; küçükse sade (okunur) kart görünümü
-    const fit = Math.floor((rw - Math.max(0, k - 1) * 4) / Math.max(1, k));
-    const cw = Math.round(Math.max(50, Math.min(92, Hh * 0.215, fit)));
-    const gap = k > 1 ? Math.round(Math.max(-cw * 0.7, Math.min(4, (rw - cw * k) / (k - 1)))) : 0;
-    hand = `<div class="r-hand hand3${cw < 80 ? ' cmp' : ''}" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
+    // tam kart tasarımı; üst üste binebilir ama her kartın en az %60'ı görünür
+    const fit = Math.floor(rw / (1 + 0.6 * Math.max(0, k - 1)));
+    const cw = Math.round(Math.max(56, Math.min(104, Hh * 0.27, fit)));
+    const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
+    hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
   return `<div class="game lp3">${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
 }
@@ -2375,7 +2376,7 @@ function renderModal(m) {
 
 function homeRules() {
   return `<ul class="rules">
-    <li><b>Kazanmak:</b> seçilen sayıda (varsayılan 3) tam set. Ev kuralı: aynı renkten ikinci bir tam set de sayılır (lobide resmi kurala çevrilebilir).</li>
+    <li><b>Kazanmak:</b> seçilen sayıda (varsayılan 3) tam set. Ev kuralı: aynı renkten ikinci bir tam set de sayılır (oyun kurulurken değiştirilebilir).</li>
     <li><b>Sıra:</b> 2 kart çek (el boşsa 5), en fazla 3 kart oyna, sonunda en fazla 7 kart tut. Elinde 7'den fazla kart varken hamle hakkın bitmeden sıranı bitiremezsin.</li>
     <li><b>Para/Aksiyon:</b> aksiyon kartlarını para olarak bankaya koyabilirsin; tapular bankaya konamaz.</li>
     <li><b>Ödeme:</b> banka ve masandan; para üstü yok. Yetmiyorsa her şeyini verirsin.</li>
@@ -2745,7 +2746,7 @@ const shareLink = code => location.origin + location.pathname + '#' + code;
 function netShareHTML(code) {
   const link = shareLink(code);
   const kCopy = cb(async () => { try { await navigator.clipboard.writeText(link); toast('Bağlantı kopyalandı.'); } catch (e) { const i = document.getElementById('shareLink'); if (i) { i.select(); } toast('Kopyalanamadı; bağlantıyı seçip kopyala.'); } });
-  const wa = 'https://wa.me/?text=' + encodeURIComponent('Tapu Takas oynayalım! Bu bağlantıdan katıl: ' + link);
+  const wa = 'https://wa.me/?text=' + encodeURIComponent('Deal oynayalım! Bu bağlantıdan katıl: ' + link);
   return `<div class="col" style="gap:8px">
     <div class="muted">Bu bağlantıyı arkadaşlarına gönder. Açıp adlarını yazınca lobiye gelirler; Claude hesabı gerekmez.</div>
     <input id="shareLink" readonly value="${esc(link)}" style="width:100%">

@@ -1,4 +1,4 @@
-# Tapu Takas
+# Deal
 
 Monopoly Deal kurallarıyla, arkadaşlarla tarayıcıda oynanan online kart oyunu.
 
