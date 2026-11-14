@@ -167,9 +167,6 @@ h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;l
 .card.wild2 .ribbon{height:1.55em;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,#1d1d1b 0 .35em,#2f2f2c .35em .7em);color:#ffd85a;font-size:.6em;font-weight:800;letter-spacing:.12em;border-top:2px solid #ffd85a;border-bottom:2px solid #ffd85a}
 .card.wild2 .ribbon span{white-space:nowrap}
 .card.wild2.flip .inner{transform:rotate(180deg)}
-.card.wild2.placed .half.bot{filter:saturate(.45) brightness(.92)}
-.card.wild2.flip.placed .half.bot{filter:none}
-.card.wild2.flip.placed .half.top{filter:saturate(.45) brightness(.92)}
 .card.wild2.placed{box-shadow:0 0 0 2px #ffd85a,0 3px 8px rgba(0,0,0,.35)}
 
 /* joker: renkli */
@@ -849,6 +846,9 @@ html{overflow-x:hidden}
 html{background:#0f442f}
 @supports (height:100lvh){ .game.pt3,.veil{bottom:auto;height:100lvh} }
 @media (max-width:720px) and (orientation:portrait){ .veil:has(.modal.sheet){align-items:stretch} .modal.sheet{height:auto !important;min-height:100%} }
+
+.turnban{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);z-index:120;pointer-events:none;background:linear-gradient(180deg,#ffe07a,#f2b72f);color:#2b1d00;font-weight:900;font-size:clamp(26px,6vmin,46px);letter-spacing:.02em;padding:.45em 1.1em;border-radius:999px;border:3px solid #fff3c4;box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 0 8px rgba(255,216,90,.25);animation:turnban 1.9s ease forwards}
+@keyframes turnban{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.96)}}
 
 </style></head><body><div id="app"></div>
 <script>
@@ -2449,6 +2449,54 @@ const endTouch = () => { touching = false; clearTimeout(touchT); if (renderWaiti
 document.addEventListener('touchmove', e => { if (e.target.closest('[data-sk]')) { touching = true; clearTimeout(touchT); touchT = setTimeout(endTouch, 2500); } }, { passive: true });
 document.addEventListener('touchend', () => { if (touching) setTimeout(endTouch, 350); }, { passive: true });
 document.addEventListener('touchcancel', () => { if (touching) setTimeout(endTouch, 350); }, { passive: true });
+
+// ---------- sıra uyarısı ----------
+let turnSeen = null, titleTimer = null, actx = null;
+const baseTitle = document.title;
+function checkTurnAlert(s) {
+  if (app.mySeat < 0 || s.phase === 'over') { turnSeen = null; return; }
+  const key = s.turn === app.mySeat && s.phase === 'play' ? 'T' + s.turnNo : null;
+  if (key && turnSeen !== null && key !== turnSeen && s.players.length > 1) turnAlert();
+  turnSeen = key || 'x' + s.turnNo;
+}
+function turnAlert() {
+  try { navigator.vibrate && navigator.vibrate([140, 70, 140]); } catch (e) {}
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    [0, 0.16].forEach((d, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + d;
+      o.type = 'sine'; o.frequency.value = i ? 880 : 660;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.25);
+    });
+  } catch (e) {}
+  document.querySelectorAll('.turnban').forEach(x => x.remove());
+  const b = document.createElement('div'); b.className = 'turnban'; b.textContent = tx('Sıra sende!');
+  document.body.appendChild(b); setTimeout(() => b.remove(), 1900);
+  if (document.hidden && !titleTimer) {
+    let on = false;
+    titleTimer = setInterval(() => { on = !on; document.title = on ? '● ' + tx('Sıra sende!') : baseTitle; }, 900);
+  }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && titleTimer) { clearInterval(titleTimer); titleTimer = null; document.title = baseTitle; } });
+// ilk dokunuşta sesi aç (iOS sesi ancak kullanıcı etkileşiminden sonra çalar)
+document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} }, { once: true });
+
+
+// yan ekranda el kartlarını gerçek alana oranla (Android'de tarayıcı çubukları yüksekliği kısaltır)
+function fitHand() {
+  const el = $root.querySelector('.lp3 .hand3'); if (!el) return;
+  const row = el.querySelector('.row'), hs = row ? [...row.children] : []; const k = hs.length; if (!k) return;
+  const h = el.clientHeight, rw = el.clientWidth; if (!h || !rw) return;
+  const fit = Math.floor(rw / (1 + 0.6 * Math.max(0, k - 1)));
+  const cw = Math.round(Math.max(40, Math.min(124, (h - 6) / 1.42, fit)));
+  const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
+  el.style.setProperty('--cw', cw + 'px');
+  hs.forEach((x, i) => { x.style.marginLeft = (i ? gap : 0) + 'px'; });
+}
+window.addEventListener('resize', () => { if (app.view === 'game') fitHand(); });
+
 function render() {
   if (touching && app.view === 'game') { renderWaiting = true; return; }
   const keep = {};
@@ -2463,11 +2511,13 @@ function render() {
   $root.innerHTML = tx(html);
   const lb = $root.querySelector('.logbox'); if (lb) lb.scrollTop = 0;
   const pcw = $root.querySelector('.pay-cards'); if (pcw) { let w = parseInt(pcw.style.getPropertyValue('--cw')) || 80; while (pcw.scrollHeight > pcw.clientHeight + 1 && w > 46) { w -= 3; pcw.style.setProperty('--cw', w + 'px'); } }
+  fitHand();
   $root.querySelectorAll('[data-sk]').forEach(el => { const v = keep[el.dataset.sk]; if (v) { el.scrollLeft = v[0]; el.scrollTop = v[1]; } });
   if (app.view === 'game' && S()) {
     const n = S().last ? S().last.n : 0;
     if (app.lastShown >= 0 && n !== app.lastShown && S().last) showFly(S().last);
     app.lastShown = n;
+    checkTurnAlert(S());
     const b = S().bld ? S().bld.n : 0;
     if (app.lastBld >= 0 && b !== app.lastBld && S().bld) showBld(S().bld);
     app.lastBld = b;
