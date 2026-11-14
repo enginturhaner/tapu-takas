@@ -2457,7 +2457,9 @@ function lobbyHTML() {
 
 
 // ---------- TELEFON YATAY (Y1c) ----------
-const isLand = () => window.innerWidth > window.innerHeight && window.innerHeight <= 520;
+// yatay düzen: yan tutulan telefon VE bilgisayar (geniş ekran). Büyük ekranda aynı düzen büyütülerek çizilir.
+const isLand = () => window.innerWidth > window.innerHeight;
+const landZoom = () => Math.max(1, Math.min(2.2, Math.min(window.innerWidth / 900, window.innerHeight / 430)));
 const isPortraitPhone = () => window.innerWidth <= 720 && window.innerHeight > window.innerWidth;
 function lpCoins(p, cls = '') {
   const cnt = {}; p.bank.forEach(id => { const v = C(id).v; cnt[v] = (cnt[v] || 0) + 1; });
@@ -2549,7 +2551,7 @@ function portHTML() {
 function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
-  const W = window.innerWidth, Hh = window.innerHeight;
+  const Z = landZoom(), W = window.innerWidth / Z, Hh = window.innerHeight / Z;
   const ow = Math.round(Math.max(46, Math.min(66, Hh * 0.155)));
   // SOL: rakipler (geniş, gerçek kartlar)
   const opps = order.map(i => {
@@ -2588,7 +2590,8 @@ function landHTML() {
     const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
     hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
-  return `<div class="game lp3">${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
+  const zs = Z > 1 ? ` style="zoom:${Z.toFixed(3)};width:${W.toFixed(1)}px;height:${Hh.toFixed(1)}px;right:auto;bottom:auto"` : '';
+  return `<div class="game lp3"${zs}>${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
 }
 const minBtn = () => `<button class="ghost minb" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}" title="Sayfayı küçült, masaya bak">▾ Masaya bak</button>`;
 function cardSecs(secs, sel = new Set()) {
@@ -2855,7 +2858,8 @@ function modalHTML() {
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
   const fab = (m.type === 'respond' || m.type === 'discard') ? `<button class="minfab" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}">▾ Masaya bak</button>` : '';
-  return pill + fab + `<div class="veil" data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
+  const vz = app.view === 'game' && isLand() && landZoom() > 1 ? (() => { const z = landZoom(); return ` style="zoom:${z.toFixed(3)};width:${(innerWidth / z).toFixed(1)}px;height:${(innerHeight / z).toFixed(1)}px;right:auto;bottom:auto"`; })() : '';
+  return pill + fab + `<div class="veil"${vz} data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
