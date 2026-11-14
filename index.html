@@ -525,7 +525,7 @@ const Engine = (() => {
       players: players.map(p => ({ uid: p.uid, name: p.name, bot: !!p.bot, hand: [], bank: [], stacks: [] })),
       deck: shuffle(CARDS.map(c => c.id)), discard: [], turn: Math.floor(Math.random() * players.length),
       playsLeft: 3, phase: 'play', pending: null, winner: null, sid: 1, turnNo: 0, log: [], v: 0, last: null, bld: null,
-      target: Math.min(5, Math.max(2, opts.target || 3)), dupSets: opts.dupSets !== false, railBuild: !!opts.railBuild,
+      target: Math.min(5, Math.max(2, opts.target || 3)), dupSets: opts.dupSets !== false, railBuild: !!opts.railBuild, botLevel: opts.botLevel === 'easy' ? 'easy' : 'hard',
     };
     s.players.forEach(p => draw(s, p, 5));
     log(s, `Oyun başladı! ${s.target} tam set toplayan kazanır${s.dupSets ? ' (aynı renkten iki set de sayılır)' : ' (setler farklı renkte olmalı)'}.${s.railBuild ? ' İstasyon ve İdare setlerine ev/otel kurulabilir.' : ''}`);
@@ -1102,6 +1102,308 @@ const Bot = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = Bot;
 
+// ===== GÜÇLÜ BOT: her hamleyi kafasında dener, pozisyonu puanlar, en iyisini seçer =====
+// Adil: rakiplerin elindeki kartları görmez (sadece sayısını bilir); deste sırasını bilmez (simülasyonda karıştırılır).
+const BotPro = (() => {
+  const E = (typeof Engine !== 'undefined') ? Engine : require('./engine.js');
+  const { COLORS, CK, C, isAct, isRainbow, complete, assetIds, assetTotal } = E;
+  const cloneS = typeof structuredClone === 'function' ? o => structuredClone(o) : o => JSON.parse(JSON.stringify(o));
+  const others = (s, seat) => s.players.map((_, i) => i).filter(i => i !== seat);
+  const JSN_KEEP = 16;
+  const TUNE = (typeof process !== 'undefined' && process.env && process.env.TUNE) ? JSON.parse(process.env.TUNE) : {};
+
+  // ---------- pozisyon puanı ----------
+  const HANDV = { jsn: JSN_KEEP, dealbreaker: 16, sly: 9, forced: 7, debt: 6, birthday: 4, passgo: 4, house: 4, hotel: 4, double: 3 };
+  function handCardValue(s, p, id) {
+    const c = C(id);
+    if (c.k === 'money') return c.v * 0.4; // eldeki para ödemede kullanılamaz: bankaya koymak hep daha iyi
+    if (c.k === 'act') {
+      if (c.a === 'dealbreaker' && !s.players.some(q => q !== p && q.stacks.some(complete))) return 8;
+      if ((c.a === 'house' || c.a === 'hotel') && !p.stacks.some(complete)) return c.v * 1.2;
+      return Math.max(HANDV[c.a] || 3, c.v * 1.5);
+    }
+    if (c.k === 'rent') return 4;
+    return 6; // tapu / joker elde
+  }
+  function stackValue(s, st, doneColors) {
+    const col = COLORS[st.color], size = col.size, n = Math.min(st.cards.length, size);
+    const real = st.cards.some(id => !isRainbow(id));
+    const w = 0.8 + col.rent[size - 1] / 16;
+    if (n >= size) return 0; // tam setler ayrı sayılır
+    const dupPenalty = (s.dupSets === false && doneColors.has(st.color)) ? 0.2 : 1;
+    const frac = n / size;
+    return (real ? 1 : 0.6) * Math.pow(frac, 1.4) * 150 * w * dupPenalty * (size - n === 1 ? 1.25 : 1);
+  }
+  function posScore(s, p, isMe) {
+    const target = s.target || 3;
+    const doneStacks = p.stacks.filter(complete);
+    const doneColors = new Set(doneStacks.map(st => st.color));
+    const done = E.countSets(p, s);
+    let sc = done * 260 + (done >= target - 1 ? 120 : 0);
+    // en iyi yarım grup (renk başına)
+    const bestPartial = {};
+    p.stacks.forEach(st => { if (complete(st)) return; const v = stackValue(s, st, doneColors); bestPartial[st.color] = Math.max(bestPartial[st.color] || 0, v); });
+    const partials = Object.values(bestPartial).sort((a, b) => b - a);
+    const pw = isMe ? 1 : (TUNE.oppPartial ?? 0.55);
+    partials.forEach((v, i) => { sc += pw * v * (i < target - done ? 1 : 0.35); });
+    // kira gücü
+    doneStacks.forEach(st => { const col = COLORS[st.color]; sc += (col.rent[col.size - 1] + (st.house != null ? 3 : 0) + (st.hotel != null ? 4 : 0)) * 4; });
+    // banka
+    const bank = p.bank.reduce((x, id) => x + C(id).v, 0);
+    sc += Math.min(bank, 12) * 4 + Math.max(0, Math.min(bank, 25) - 12) * 1.5 + Math.max(0, bank - 25) * 0.5;
+    // el
+    if (isMe) sc += p.hand.reduce((x, id) => x + handCardValue(s, p, id), 0);
+    return sc;
+  }
+  function evalFor(s, seat) {
+    if (s.phase === 'over') return s.winner === seat ? 1e6 : -1e6;
+    const my = posScore(s, s.players[seat], true);
+    let mx = 0, sum = 0;
+    s.players.forEach((p, i) => { if (i === seat) return; const v = posScore(s, p, false); mx = Math.max(mx, v); sum += v; });
+    return my - (TUNE.wmax ?? 1.0) * mx - (TUNE.wsum ?? 0.2) * sum;
+  }
+
+  // ---------- simülasyon ----------
+  function shuffleDeck(st) { const a = st.deck; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
+  // bekleyen yanıtları çöz: rakipler Reddet kullanmadan en iyi şekilde öder/kabul eder
+  function resolve(st, seat) {
+    let guard = 0;
+    while (st.pending && st.phase !== 'over' && guard++ < 12) {
+      const w = E.respondent(st), pd = st.pending;
+      let a;
+      if (pd.stage === 'actor') a = { t: 'accept' };
+      else if (pd.kind === 'steal') a = { t: 'accept' };
+      else a = { t: 'pay', cards: payChoice(st, w, pd.amount, pd.actor) };
+      const r = E.apply(st, w, a);
+      if (!r.ok) { const r2 = E.apply(st, w, { t: 'pay', cards: assetIds(st.players[w]).filter(id => C(id).v > 0) }); if (!r2.ok) break; }
+    }
+  }
+  function simulate(s, seat, a) {
+    const st = cloneS(s); shuffleDeck(st);
+    const r = E.apply(st, seat, a);
+    if (!r.ok) return null;
+    resolve(st, seat);
+    return st;
+  }
+
+  // ---------- aday hamleler ----------
+  function candidates(s, seat) {
+    const p = s.players[seat], out = [];
+    const opp = others(s, seat);
+    const dbls = p.hand.filter(id => isAct(id, 'double'));
+    const seen = new Set();
+    // joker taşıma (set bozma dahil)
+    p.stacks.forEach(st => st.cards.forEach(id => {
+      if (C(id).k !== 'wild') return;
+      const cols = C(id).colors === 'any' ? CK : C(id).colors;
+      cols.forEach(col => { if (col !== st.color) out.push({ t: 'move', card: id, color: col }); });
+    }));
+    if (s.playsLeft <= 0) return out;
+    p.hand.forEach(id => {
+      const c = C(id);
+      const key = c.k === 'money' ? 'm' + c.v : c.k === 'act' ? 'a' + c.a : c.k === 'rent' ? 'r' + JSON.stringify(c.colors) : 'p' + id;
+      if (seen.has(key)) return; seen.add(key);
+      if (c.k !== 'prop' && c.k !== 'wild') out.push({ t: 'bank', card: id });
+      if (c.k === 'prop') out.push({ t: 'prop', card: id });
+      if (c.k === 'wild') (c.colors === 'any' ? CK : c.colors).forEach(col => out.push({ t: 'prop', card: id, color: col }));
+      if (c.k === 'rent') {
+        const cols = (c.colors === 'any' ? CK : c.colors).filter(col => E.rentFor(p, col) > 0);
+        cols.forEach(col => {
+          for (let d = 0; d <= Math.min(dbls.length, s.playsLeft - 1); d++) {
+            const base = { t: 'play', card: id, color: col, doubles: dbls.slice(0, d) };
+            if (c.colors === 'any') opp.forEach(t => out.push({ ...base, target: t })); else out.push(base);
+          }
+        });
+      }
+      if (c.k === 'act') {
+        switch (c.a) {
+          case 'passgo': case 'birthday': out.push({ t: 'play', card: id }); break;
+          case 'debt': opp.forEach(t => out.push({ t: 'play', card: id, target: t })); break;
+          case 'house': case 'hotel': p.stacks.forEach(st => { if (complete(st)) out.push({ t: 'play', card: id, sid: st.sid }); }); break;
+          case 'dealbreaker': opp.forEach(t => s.players[t].stacks.forEach(st => { if (complete(st)) out.push({ t: 'play', card: id, target: t, sid: st.sid }); })); break;
+          case 'sly': opp.forEach(t => s.players[t].stacks.forEach(st => { if (!complete(st)) st.cards.forEach(x => out.push({ t: 'play', card: id, target: t, take: x })); })); break;
+          case 'forced': {
+            const mine = p.stacks.filter(st => !complete(st)).flatMap(st => st.cards);
+            opp.forEach(t => s.players[t].stacks.forEach(st => { if (!complete(st)) st.cards.forEach(x => mine.forEach(g => out.push({ t: 'play', card: id, target: t, take: x, give: g }))); }));
+            break;
+          }
+        }
+      }
+    });
+    return out;
+  }
+
+  // bazı hamlelerin değeri rakibin Reddet ihtimaline göre biraz düşürülür (rakibin elini görmeyiz)
+  function jsnRisk(s, a) {
+    if (a.t !== 'play') return 0;
+    const c = C(a.card); if (c.k !== 'act' && c.k !== 'rent') return 0;
+    const tgts = a.target != null ? [a.target] : others(s, s.turn);
+    const handSum = tgts.reduce((x, t) => x + s.players[t].hand.length, 0);
+    return Math.min(0.5, 0.04 * handSum); // kabaca: elde ne kadar kart varsa o kadar risk
+  }
+
+  function play(s, seat) {
+    const p = s.players[seat];
+    if (s.phase === 'discard') {
+      const n = p.hand.length - 7;
+      return { t: 'discard', cards: [...p.hand].sort((a, b) => handCardValue(s, p, a) - handCardValue(s, p, b)).slice(0, n) };
+    }
+    const base = evalFor(s, seat);
+    let best = null, bestV = -Infinity;
+    const cands = candidates(s, seat);
+    const scored = [];
+    for (const a of cands) {
+      // rastgele çekişli hamlelerde birkaç örnek al
+      const samples = (a.t === 'play' && isAct(a.card, 'passgo')) ? 3 : 1;
+      let v = 0, ok = true;
+      for (let k = 0; k < samples; k++) { const st = simulate(s, seat, a); if (!st) { ok = false; break; } v += evalFor(st, seat); }
+      if (!ok) continue;
+      v /= samples;
+      if (v >= 1e5) return a; // kazandıran hamle
+      const risk = jsnRisk(s, a);
+      v = base + (v - base) * (1 - risk) - (risk ? 1 : 0);
+      if (a.t === 'move' && v - base < 4) continue; // gereksiz oynamayı önle
+      scored.push({ a, v });
+    }
+    // 2. adım: en iyi birkaç hamle için, aynı sırada ardından gelecek en iyi hamleyi de düşün
+    scored.sort((x, y) => y.v - x.v);
+    const depth2 = s._depth ? 0 : (TUNE.d2 ?? 6);
+    scored.forEach((o, i) => {
+      let v = o.v;
+      if (i < depth2) {
+        const st = simulate(s, seat, o.a);
+        if (st && st.turn === seat && st.phase === 'play' && !st.pending && st.playsLeft > 0) {
+          st._depth = 1;
+          let b2 = -Infinity;
+          for (const b of candidates(st, seat)) { if (b.t === 'move') continue; const st2 = simulate(st, seat, b); if (!st2) continue; const v2 = evalFor(st2, seat); if (v2 > b2) b2 = v2; }
+          if (b2 > v) v = v * 0.4 + b2 * 0.6;
+        }
+      }
+      if (v > bestV) { bestV = v; best = o.a; }
+    });
+    const canEnd = !E.mustPlay(s);
+    if (best && (bestV > base + 1 || !canEnd)) return best;
+    if (!canEnd && cands.length) return cands.find(a => a.t !== 'move') || cands[0];
+    return { t: 'end' };
+  }
+
+  // ---------- ödeme: en az kaybettiren kartlar ----------
+  function removeSim(p, id) {
+    const q = cloneS(p);
+    const bi = q.bank.indexOf(id); if (bi >= 0) { q.bank.splice(bi, 1); return q; }
+    for (const st of q.stacks) {
+      if (st.house === id) { st.house = null; if (st.hotel != null) { q.bank.push(st.hotel); st.hotel = null; } return q; }
+      if (st.hotel === id) { st.hotel = null; return q; }
+      const i = st.cards.indexOf(id);
+      if (i >= 0) { st.cards.splice(i, 1); if (!complete(st)) { [st.house, st.hotel].forEach(x => { if (x != null) q.bank.push(x); }); st.house = st.hotel = null; } if (!st.cards.length) q.stacks.splice(q.stacks.indexOf(st), 1); return q; }
+    }
+    return q;
+  }
+  function receiverGain(s, recv, id) {
+    if (recv == null) return 0;
+    const c = C(id); if (c.k !== 'prop' && c.k !== 'wild') return 0;
+    const r = s.players[recv];
+    const cols = c.k === 'prop' ? [c.color] : (c.colors === 'any' ? CK : c.colors);
+    let g = 0;
+    cols.forEach(col => {
+      const best = r.stacks.filter(st => st.color === col && !complete(st)).reduce((m, st) => Math.max(m, st.cards.length), 0);
+      const size = COLORS[col].size;
+      g = Math.max(g, best + 1 >= size ? 140 : best > 0 ? 25 * (best + 1) / size : 4);
+    });
+    return g;
+  }
+  function payChoice(s, seat, amount, recv) {
+    const p = s.players[seat];
+    const all = assetIds(p).filter(id => C(id).v > 0);
+    const total = all.reduce((x, id) => x + C(id).v, 0);
+    if (total <= amount) return all;
+    const bank = p.bank.filter(id => C(id).v > 0);
+    const bankSum = bank.reduce((x, id) => x + C(id).v, 0);
+    if (bankSum >= amount) {
+      // en az fazla ödeyen alt küme (değerler küçük: DP)
+      const best = new Map([[0, []]]);
+      bank.forEach(id => { const v = C(id).v; [...best.entries()].forEach(([sum, ids]) => { const ns = sum + v; if (!best.has(ns) || best.get(ns).length > ids.length + 1) best.set(ns, [...ids, id]); }); });
+      const sums = [...best.keys()].filter(x => x >= amount).sort((a, b) => a - b);
+      return best.get(sums[0]);
+    }
+    // bankanın hepsi + en az kayıplı masa kartları
+    let pick = [...bank], sum = bankSum, cur = p;
+    const base = posScore(s, p, true);
+    while (sum < amount) {
+      const opts = assetIds(cur).filter(id => !pick.includes(id) && C(id).v > 0);
+      if (!opts.length) break;
+      let bestId = null, bestScore = Infinity;
+      opts.forEach(id => {
+        const after = removeSim(cur, id);
+        const loss = posScore(s, cur, true) - posScore(s, after, true) + receiverGain(s, recv, id) * 0.6;
+        const need = amount - sum, v = C(id).v;
+        const sc = loss / Math.min(v, need) + (v > need ? (v - need) * 0.8 : 0);
+        if (sc < bestScore) { bestScore = sc; bestId = id; }
+      });
+      pick.push(bestId); sum += C(bestId).v; cur = removeSim(cur, bestId);
+    }
+    // fazlalığı at (önce en değerli)
+    pick.sort((a, b) => C(b).v - C(a).v);
+    for (let i = 0; i < pick.length; i++) if (sum - C(pick[i]).v >= amount) { sum -= C(pick[i]).v; pick.splice(i, 1); i--; }
+    void base;
+    return pick;
+  }
+
+  // ---------- yanıtlar (Reddet kararı) ----------
+  function respond(s, seat) {
+    const pd = s.pending, p = s.players[seat];
+    const hasJ = p.hand.some(id => isAct(id, 'jsn'));
+    const now = evalFor(s, seat);
+    if (pd.stage === 'actor') {
+      if (!hasJ) return { t: 'accept' };
+      // karşı Reddet: hamlem geçerli olursa ne kazanırım?
+      const st = cloneS(s); const j = st.players[seat].hand.find(id => isAct(id, 'jsn'));
+      const r = E.apply(st, seat, { t: 'jsn' }); if (!r.ok) return { t: 'accept' };
+      // rakip tekrar reddetmezse
+      const st2 = cloneS(st);
+      if (st2.pending && st2.pending.stage === 'target') {
+        const w = st2.pending.cur;
+        const a = st2.pending.kind === 'steal' ? { t: 'accept' } : { t: 'pay', cards: payChoice(st2, w, st2.pending.amount, seat) };
+        E.apply(st2, w, a); resolve(st2, seat);
+      }
+      const gain = evalFor(st2, seat) - now;
+      void j;
+      return gain > JSN_KEEP + 6 ? { t: 'jsn' } : { t: 'accept' };
+    }
+    // hedef benim
+    let accept;
+    if (pd.kind === 'steal') accept = { t: 'accept' };
+    else accept = { t: 'pay', cards: payChoice(s, seat, pd.amount, pd.actor) };
+    if (!hasJ) return accept;
+    const st = cloneS(s); E.apply(st, seat, accept);
+    // aynı hamlenin diğer hedeflerini dahil etmeden sadece kendi kaybım
+    const loss = now - evalFor(st, seat);
+    const threshold = JSN_KEEP + 8;
+    if (pd.act === 'dealbreaker' || loss > threshold) return { t: 'jsn' };
+    return accept;
+  }
+
+  function decide(s, seat) {
+    try {
+      const a = s.pending ? respond(s, seat) : play(s, seat);
+      return a;
+    } catch (e) { if (typeof console !== 'undefined') console.warn('BotPro hata', e); return null; }
+  }
+  return { decide, evalFor, payChoice };
+})();
+
+// Bot seçimi: oyun "kolay" ise eski bot, değilse güçlü bot
+(function () {
+  const B = (typeof Bot !== 'undefined') ? Bot : require('./bot.js');
+  const easy = B.decide, easyFallback = B.fallback;
+  B.decide = (s, seat) => {
+    if (s.botLevel === 'easy') return easy(s, seat);
+    return BotPro.decide(s, seat) || easy(s, seat);
+  };
+  B.fallback = (s, seat) => easyFallback(s, seat);
+  if (typeof module !== 'undefined') module.exports = { BotPro, Bot: B };
+})();
+
 // ===== ARAYÜZ + ONLINE =====
 const { COLORS, C } = Engine;
 const $root = document.getElementById('app');
@@ -1112,7 +1414,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
 const app = {
   view: 'home', local: false, code: null, game: null, state: null, mySeat: -1, isHost: false,
-  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, railBuild: false, maxPlayers: 3, lastShown: -1, lastBld: -1,
+  name: lsGet('td_name') || '', botCount: 2, target: 3, dupSets: true, railBuild: false, botLevel: 'hard', maxPlayers: 3, lastShown: -1, lastBld: -1,
   ui: { modal: null, sel: new Set(), openOpps: new Set() },
   myGames: [], lobbies: [], onlineStatus: 'loading', canWrite: true,
 };
@@ -1322,6 +1624,7 @@ function homeHTML() {
         ${targetPicker(app.target, n => { app.target = n; render(); })}
         ${dupPicker(app.dupSets, v => { app.dupSets = v; render(); })}
         ${railPicker(app.railBuild, v => { app.railBuild = v; render(); })}
+        ${levelPicker(app.botLevel, v => { app.botLevel = v; render(); })}
         <button class="primary" data-k="${kBots}">Botlarla başlat</button>
       </div>
     </div>
@@ -1342,6 +1645,10 @@ function targetPicker(cur, fn, dis = false) {
   return `<div class="row" data-k="${k}">Kaç sette bitsin: ${[2, 3, 4, 5].map(n => `<button ${dis ? 'disabled' : ''} data-t="${n}" class="${cur === n ? 'primary' : 'ghost'}">${n} set</button>`).join('')}</div>`;
 }
 
+function levelPicker(cur, fn) {
+  const k = cb(e => { if (e.target.dataset.l) fn(e.target.dataset.l); });
+  return `<div class="row" data-k="${k}">Bot seviyesi: <button data-l="easy" class="${cur === 'easy' ? 'primary' : 'ghost'}">Kolay</button><button data-l="hard" class="${cur !== 'easy' ? 'primary' : 'ghost'}">Zor</button></div>`;
+}
 function railPicker(cur, fn) {
   const k = cb(e => { if (e.target.dataset.r) fn(e.target.dataset.r === '1'); });
   return `<div class="row" data-k="${k}">İstasyon/İdare'ye ev-otel: <button data-r="0" class="${!cur ? 'primary' : 'ghost'}">Kurulamaz (resmi)</button><button data-r="1" class="${cur ? 'primary' : 'ghost'}">Kurulabilir</button></div>`;
@@ -1363,7 +1670,7 @@ function lobbyHTML() {
     <div class="row"><button class="ghost" data-k="${cb(goHome)}">← Ana sayfa</button></div>
     <div class="panel"><div class="muted">Oyun kodu</div><div class="bigcode">${esc(g.code)}</div>
       ${window.NET_MODE === 'p2p' ? netShareHTML(g.code) : '<div class="muted">Arkadaşların bu sayfayı açıp kodu yazsın ya da "Açık lobiler" listesinden katılsın.</div>'}</div>
-    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) + railPicker(!!g.railBuild, v => writeGame({ railBuild: v })) : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'} ${g.railBuild ? 'İstasyon ve İdare setlerine ev/otel kurulabilir.' : 'İstasyon ve İdare setlerine ev/otel kurulamaz.'}</div>`}</div>
+    <div class="panel"><h2>Bitiş</h2>${host ? targetPicker(g.target || 3, n => writeGame({ target: n })) + dupPicker(g.dupSets !== false, v => writeGame({ dupSets: v })) + railPicker(!!g.railBuild, v => writeGame({ railBuild: v })) + (g.players.some(p => p.bot) ? levelPicker(g.botLevel || 'hard', v => writeGame({ botLevel: v })) : '') : `<div><span class="pill gold">${g.target || 3} tam set</span> toplayan kazanır. ${g.dupSets !== false ? 'Aynı renkten ikinci set de sayılır.' : 'Setler farklı renkte olmalı.'} ${g.railBuild ? 'İstasyon ve İdare setlerine ev/otel kurulabilir.' : 'İstasyon ve İdare setlerine ev/otel kurulamaz.'}</div>`}</div>
     <div class="panel"><h2>Oyuncular (${g.players.length}/${maxOf(g)})</h2>
       ${host ? `<div class="row" data-k="${cb(e => { if (e.target.dataset.m) hostSetMax(+e.target.dataset.m); })}">Kaç kişilik: ${[2, 3, 4, 5].map(n => `<button data-m="${n}" ${n < g.players.length ? 'disabled' : ''} class="${maxOf(g) === n ? 'primary' : 'ghost'}">${n} kişi</button>`).join('')}</div>` : ''}
       <div class="list">${rows}</div>
@@ -1824,7 +2131,7 @@ function startLocal() {
   const names = ['Bot Ayşe', 'Bot Mehmet', 'Bot Zeynep', 'Bot Can'];
   const players = [{ uid: 'me', name: (app.name || 'Ben').trim(), bot: false }, ...names.slice(0, app.botCount).map((n, i) => ({ uid: 'bot' + i, name: n, bot: true }))];
   app.local = true; app.isHost = false; app.code = null; app.game = null;
-  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets, railBuild: app.railBuild }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
+  app.state = Engine.newGame(players, { target: app.target, dupSets: app.dupSets, railBuild: app.railBuild, botLevel: app.botLevel }); app.mySeat = 0; app.lastShown = -1; app.lastBld = -1; app.view = 'game'; app.ui.modal = null;
   render(); scheduleBots();
 }
 
@@ -1876,13 +2183,13 @@ function hostRemove(i) {
 function hostStart() {
   const players = H.players || app.game.players;
   if (players.length < 2) return;
-  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false, railBuild: !!app.game.railBuild })); app.state = H.state;
+  H.state = clone(Engine.newGame(players, { target: app.game.target || 3, dupSets: app.game.dupSets !== false, railBuild: !!app.game.railBuild, botLevel: app.game.botLevel || 'hard' })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state });
   app.view = 'game'; render(); scheduleBots();
 }
 function hostRestart() {
   const players = (H.state ? H.state.players : app.game.players).map(p => ({ uid: p.uid, name: p.name, bot: p.bot }));
-  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false, railBuild: H.state ? !!H.state.railBuild : !!app.game.railBuild })); app.state = H.state;
+  H.state = clone(Engine.newGame(players, { target: (H.state && H.state.target) || app.game.target || 3, dupSets: H.state ? H.state.dupSets !== false : app.game.dupSets !== false, railBuild: H.state ? !!H.state.railBuild : !!app.game.railBuild, botLevel: (H.state && H.state.botLevel) || app.game.botLevel || 'hard' })); app.state = H.state;
   writeGame({ status: 'playing', state: H.state }); render(); scheduleBots();
 }
 
