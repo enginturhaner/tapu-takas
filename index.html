@@ -2556,7 +2556,7 @@ function homeHTML() {
   if (online === 'loading') onlineMsg = '<div class="muted">Online bağlantı kuruluyor…</div>';
   else if (online === 'off') onlineMsg = window.NET_MODE === 'p2p' ? '<div class="notice">Bağlantı aracı yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile. Botlarla deneme yine de çalışır.</div>' : '<div class="notice">Online oyun bu görünümde çalışmıyor (giriş yapılmamış ya da sayfa sohbet önizlemesinde açık). Sayfayı claude.ai bağlantısından açınca online oynayabilirsin. Botlarla deneme her yerde çalışır.</div>';
   else if (!app.canWrite) onlineMsg = '<div class="notice">Bu sayfada oyun kurma/katılma iznin yok. Sayfanın sahibi seni <b>Düzenleyici (Editor)</b> olarak davet etmeli.</div>';
-  const mine = app.myGames.filter(g => g.status !== 'over').slice(0, 8);
+  const mine = app.myGames.filter(g => g.status !== 'over' && g.status !== 'closed').slice(0, 8);
   const lob = app.lobbies.filter(g => !(g.uids || []).includes(myUid)).slice(0, 8);
   const gameItem = (g, label) => `<div class="item"><span><span class="code">${esc(g.code)}</span> <span class="muted">· ${esc((g.players || []).map(p => p.name).join(', '))}</span></span><button ${disabled} data-k="${cb(() => label === 'Katıl' ? joinByCode(g.code) : openGame(g.code))}">${label}</button></div>`;
   const fanIds = [Engine.CARDS.findIndex(c => c.k === 'prop' && c.color === 'red'), Engine.CARDS.findIndex(c => c.k === 'act' && c.a === 'dealbreaker'), Engine.CARDS.findIndex(c => c.k === 'money' && c.v === 10)];
@@ -3052,6 +3052,25 @@ const cancelBtn = () => `<div class="row"><button class="ghost" data-k="${cb(clo
 const playThen = a => () => { app.ui.modal = null; send(a); };
 
 
+
+// reddedilen oyun: herkes yazıyı görsün, sonra oyun listeden silinip ana sayfaya dönülsün
+let closeTimer = null;
+function forgetGame(code) {
+  if (!code) return;
+  try { const l = JSON.parse(lsGet('td_games') || '[]').filter(g => g.code !== code); lsSet('td_games', JSON.stringify(l)); } catch (e) {}
+  try { localStorage.removeItem('td_host_' + code); } catch (e) {}
+  app.myGames = (app.myGames || []).filter(g => g.code !== code);
+}
+function closeLater() {
+  if (closeTimer) return;
+  const code = app.code;
+  closeTimer = setTimeout(() => {
+    closeTimer = null; forgetGame(code);
+    if (app.code === code && app.view === 'game') { app.ui.modal = null; goHome(); }
+    forgetGame(code);
+  }, 3500);
+}
+
 function rematchSend(t) {
   if (app.local) { if (t === 'rematch') { app.ui.modal = null; startLocal(); } return; }
   if (app.isHost) { rematchAct(app.mySeat, { t }); return; }
@@ -3064,7 +3083,7 @@ function overModal() {
   const ask = `<button class="primary" data-k="${cb(() => rematchSend('rematch'))}">Yeniden oyna</button>`;
   if (my < 0) return head + `<div class="row" style="justify-content:center">${home}</div>`;
   if (!rm || app.local) return head + `<div class="row" style="justify-content:center">${ask}${home}</div>`;
-  if (rm.no >= 0) return head + `<div class="rmnote">${esc(s.players[rm.no].name)} yeniden oynamak istemedi.</div><div class="row" style="justify-content:center">${ask}${home}</div>`;
+  if (rm.no >= 0) { closeLater(); return head + `<div class="rmnote">${esc(s.players[rm.no].name)} yeniden oynamak istemedi.</div><div class="muted" style="text-align:center">Oyun kapandı, ana sayfaya dönülüyor…</div><div class="row" style="justify-content:center">${home}</div>`; }
   const list = `<div class="rmlist">${s.players.map((p, i) => `<span class="${rm.yes.includes(i) ? 'ok' : ''}">${rm.yes.includes(i) ? '✓' : '…'} ${esc(p.name)}</span>`).join('')}</div>`;
   if (rm.yes.includes(my)) return head + `<div class="rmnote">Yeniden oyna isteği gönderildi. Herkes onaylayınca yeni oyun başlar.</div>${list}<div class="row" style="justify-content:center">${home}</div>`;
   return head + `<div class="rmnote">${esc(s.players[rm.by].name)} yeniden oynamak istiyor.</div>${list}<div class="row" style="justify-content:center">
@@ -3422,7 +3441,7 @@ function rematchAct(seat, a) {
   st.v = (st.v || 0) + 1;
   H.state = st; app.state = st;
   if (st.rematch.no < 0 && st.rematch.yes.length >= n) { hostRestart(); return; }
-  writeGame({ state: st }); render();
+  writeGame(st.rematch.no >= 0 ? { state: st, status: 'closed' } : { state: st }); render();
 }
 
 // ---------- ONLINE (eşler arası bağlantı: sunucusuz, kurucunun tarayıcısı hakem) ----------
