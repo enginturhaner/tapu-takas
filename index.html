@@ -814,7 +814,7 @@ html{overflow-x:hidden}
 
 /* ===== TELEFON DİK v2 (tek ekran) ===== */
 .game.pt3{position:fixed;inset:0;overflow:hidden;display:flex;flex-direction:column;gap:6px;box-shadow:none;height:auto;min-height:0;
-  padding:calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 4px) 10px !important;
+  padding:calc(var(--topsafe) + 8px) 10px calc(env(safe-area-inset-bottom) + 4px) 10px !important;
   background:radial-gradient(ellipse 90% 70% at 50% 40%,#1d7050 0%,#155a40 50%,#0f442f 100%)}
 .pt3 .po3{flex:1 1 auto;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none}
 .pt3 .po3::-webkit-scrollbar{display:none}
@@ -825,7 +825,7 @@ html{overflow-x:hidden}
 .pt3 .ph3hand .row{position:absolute;left:0;right:0;top:2px;bottom:auto;justify-content:center}
 .pt3 .h3 .e3{min-height:36px}
 /* istek/ödeme sayfaları: üst güvenli alan ve dik düzen */
-.modal.sheet{padding-top:calc(env(safe-area-inset-top) + 10px) !important;padding-bottom:calc(env(safe-area-inset-bottom) + 8px) !important}
+.modal.sheet{padding-top:calc(var(--topsafe) + 10px) !important;padding-bottom:calc(env(safe-area-inset-bottom) + 8px) !important}
 @media (max-width:720px) and (orientation:portrait){
   .pay-top{flex-direction:column;align-items:stretch;gap:8px}
   .pay-top .pt > b{white-space:normal;font-size:15px;line-height:1.3}
@@ -835,6 +835,15 @@ html{overflow-x:hidden}
   .meter{height:auto;min-height:24px}
   .minfab{bottom:calc(env(safe-area-inset-bottom) + 10px)}
 }
+/* üst güvenli alan: telefonda Claude uygulaması içinde üstte yarı saydam başlık var; içerik onun altından başlar */
+:root{--topsafe:env(safe-area-inset-top)}
+.home.h2,.lobby{padding-top:calc(var(--topsafe) + 16px)}
+.veil{padding-top:calc(var(--topsafe) + 12px)}
+.veil:has(.modal.sheet){padding-top:0}
+.minpill{top:calc(var(--topsafe) + 6px)}
+@media (max-width:720px) and (orientation:portrait){ .minpill{bottom:auto;left:10px;right:10px;transform:none;max-width:none;top:calc(var(--topsafe) + 4px)} .minpill .t{font-size:12.5px} }
+/* reddet karşılığı da tam sayfa */
+.modal.sheet .actorbox{display:flex;flex-direction:column;gap:12px;font-size:15px}
 
 </style></head><body><div id="app"></div>
 <script>
@@ -2269,6 +2278,15 @@ let unsubGame = null, unsubActs = null, H = { state: null, ready: false, process
 let botTimer = null, lastNoticeN = 0, sentAt = 0, sentV = -1;
 
 // ---------- callback kayıt sistemi ----------
+// Claude uygulamasının içinde (iframe) telefon dik tutulunca üstte yarı saydam bir başlık var: içerik onun altından başlasın
+function setTopSafe() {
+  let inFrame = false; try { inFrame = window.self !== window.top || /[?&]frame=1/.test(location.search); } catch (e) { inFrame = true; }
+  const portraitPhone = window.innerWidth <= 720 && window.innerHeight > window.innerWidth;
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+  const v = inFrame && portraitPhone ? '96px' : (portraitPhone && !standalone ? 'max(env(safe-area-inset-top), 12px)' : 'env(safe-area-inset-top)');
+  document.documentElement.style.setProperty('--topsafe', v);
+}
+setTopSafe(); window.addEventListener('resize', setTopSafe); window.addEventListener('orientationchange', setTopSafe);
 let CB = [];
 const cb = fn => { CB.push(fn); return CB.length - 1; };
 document.addEventListener('click', e => {
@@ -3131,8 +3149,8 @@ function respondModal() {
   const kJ = cb(() => send({ t: 'jsn' }));
   const jsnBtn = jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet <small>(elinde ${jsn})</small></button>` : '';
   if (pd.stage === 'actor') {
-    return `<h3>${pname(pd.cur)} hamleni reddetti</h3><div class="muted">${describePending(s)}. Sen de Reddet oynarsan hamlen geçerli olur.</div>
-      <div class="row">${jsnBtn}<button data-k="${cb(() => send({ t: 'accept' }))}">Kabul et (hamle iptal)</button></div>`;
+    const btns = `${jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet (${jsn})</button>` : ''}<button data-k="${cb(() => send({ t: 'accept' }))}">Kabul et (hamle iptal)</button>`;
+    return sheetTop(`${pname(pd.cur)} hamleni reddetti`, `${describePending(s)}. Sen de Reddet oynarsan hamlen geçerli olur.`, btns);
   }
   const title = `<h3>${describePending(s)}</h3>`;
   if (pd.kind === 'steal') {
