@@ -1103,6 +1103,11 @@ const TX_RULES = [
   [new RegExp(TXN + ' jokeri ' + TXC + ' rengine taşıdı', 'g'), '$1 moved a wildcard to $2'],
   [new RegExp(TXN + ' oynadı: ', 'g'), '$1 played: '],
   [/Botlar bu cihazda (\d+) oyundan öğrendi \((\d+) hamle\)\./g, 'Bots on this device have learned from $1 games ($2 moves).'],
+  [/Tam (\d+) kart seçmelisin\./g, 'Choose exactly $1 cards.'], [/En az (\d+)M seçmelisin \(ya da her şeyini\)\./g, 'Choose at least $1M (or everything).'],
+  [/Herkesten (\d+)M kira iste/g, 'Charge everyone $1M rent'],
+  [/(>|^)Ev koy: /g, '$1Add house: '], [/(>|^)Otel koy: /g, '$1Add hotel: '],
+  [/\((Ev|Otel)\)/g, (m, a) => a === 'Ev' ? '(House)' : '(Hotel)'], [/: (Ev|Otel)(<|$|\s)/g, (m, a, b) => ': ' + (a === 'Ev' ? 'House' : 'Hotel') + b],
+  [/Masa (\d+)\s+players;/g, 'Table for $1;'], [/(\d+) tam set<\/span> toplayan kazanır\./g, '$1 full sets</span> to win.'],
   [/Kimden (\d+)M kira isteyeceksin\?/g, 'Who should pay $1M rent?'],
   [/ oynadı: /g, ' played: '], [/ tapu açtı: /g, ' played a property: '], [/ bankaya koydu: /g, ' banked: '],
   [new RegExp(' jokeri ' + TXC + ' rengine taşıdı', 'g'), ' moved a wildcard to $1'],
@@ -1191,7 +1196,7 @@ const TX_RULES = [
 ];
 function tx(html) {
   if (LANG !== 'en' || !html) return html;
-  let out = String(html);
+  let out = String(html).replace(/&#39;/g, "'");
   for (const [f, r] of TX_RULES) out = typeof f === 'string' ? out.split(f).join(r) : out.replace(f, r);
   return out;
 }
