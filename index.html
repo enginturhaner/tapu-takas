@@ -709,6 +709,29 @@ html{overflow-x:hidden}
 .o3 > .lp-co.six{max-width:none;margin:0;flex:0 0 auto}
 .o3 > .lp-co.six span{flex-direction:row;justify-content:center;gap:2px;line-height:14px;padding:0}
 .hand3 .row{bottom:auto;top:2px}
+/* elde küçük kart: sade, okunur görünüm */
+.cmp .card{font-size:9px;padding:2px}
+.cmp .card .cv{font-size:8.5px;min-width:2.1em;height:2.1em}
+.cmp .card.prop .ptitle{min-height:58%;padding:1.9em .2em .3em;justify-content:flex-start}
+.cmp .card.prop .ptitle small,.cmp .card .ladder,.cmp .card .hdr,.cmp .card .desc,.cmp .card.money .mtop,.cmp .card.money .mword,.cmp .card.money .mc,.cmp .card.money .guil,.cmp .card.wild2 .mini,.cmp .card.wildany .jcap,.cmp .card .disc .ico{display:none}
+.cmp .card.prop .ptitle b{font-size:.92em;line-height:1.08;word-break:normal;overflow-wrap:anywhere;hyphens:auto}
+.cmp .card.prop .inner{background:linear-gradient(var(--c),var(--c)) top/100% 58% no-repeat,#fffdf7}
+.cmp .card.money .inner{justify-content:center;padding:.2em}
+.cmp .card.money .medal{width:92%}
+.cmp .card.money .face b{font-size:2.1em}
+.cmp .card .disc{width:92%;margin:2em 0 0;padding:.15em;border-width:.14em}
+.cmp .card .disc span{font-size:1em;line-height:1.05}
+.cmp .card.rent .disc span{font-size:.85em;width:70%}
+.cmp .card.wild2 .half b{font-size:.95em}
+.cmp .card.wild2 .half.bot{transform:none}
+.cmp .card.wild2 .ribbon span{font-size:.62em}
+.cmp .card.wildany .jtag{font-size:.85em;letter-spacing:.06em}
+.cmp .card.wildany .ring{width:80%}
+.pay-top .sub{font-size:11.5px;color:#cfe3d6;line-height:1.3}
+.psec.pick{cursor:pointer}
+.psec.pick:hover,.psec.pick:active{box-shadow:0 0 0 2px var(--gold)}
+.pay-cards .pc.hl .card{box-shadow:0 0 0 3px var(--gold),0 4px 12px rgba(0,0,0,.5)}
+.pay-cards .card.click:hover{transform:translateY(-3px)}
 
 </style></head><body><div id="app"></div>
 <script>
@@ -1423,7 +1446,15 @@ const BotPro = (() => {
     if (s.phase === 'over') return s.winner === seat ? 1e6 : -1e6;
     const my = posScore(s, s.players[seat], true);
     let mx = 0, sum = 0;
-    s.players.forEach((p, i) => { if (i === seat) return; const v = posScore(s, p, false); mx = Math.max(mx, v); sum += v; });
+    const target = s.target || 3;
+    s.players.forEach((p, i) => {
+      if (i === seat) return;
+      let v = posScore(s, p, false);
+      // kazanmaya bir set kalan rakip: herkes ona yüklenir (setlerini Haciz'le al, tapularını çal, kirayı ondan iste)
+      const d = E.countSets(p, s);
+      if (d >= target - 1) v = v * 2.2 + 250 * d;
+      mx = Math.max(mx, v); sum += v;
+    });
     return my - (TUNE.wmax ?? 1.0) * mx - (TUNE.wsum ?? 0.2) * sum;
   }
 
@@ -1460,7 +1491,12 @@ const BotPro = (() => {
     p.stacks.forEach(st => st.cards.forEach(id => {
       if (C(id).k !== 'wild') return;
       const cols = C(id).colors === 'any' ? CK : C(id).colors;
-      cols.forEach(col => { if (col !== st.color) out.push({ t: 'move', card: id, color: col }); });
+      cols.forEach(col => {
+        if (col === st.color) return;
+        // joker tek başına yeni bir gruba taşınmaz; yalnızca gerçek tapulu ya da tamamlanacak gruba
+        const ok = p.stacks.some(x => x.color === col && !complete(x) && (x.cards.some(y => C(y).k === 'prop') || x.cards.length + 1 >= COLORS[col].size));
+        if (ok) out.push({ t: 'move', card: id, color: col });
+      });
     }));
     if (s.playsLeft <= 0) return out;
     p.hand.forEach(id => {
@@ -2050,12 +2086,33 @@ function landHTML() {
     table = `<div class="t3"><div class="bankcol"><div class="tot">${bankTotal(p)}M</div>${lpCoins(p, 'm')}<div class="sets">${lpDots(p)} set</div></div><div class="gs" data-sk="gme">${gs}</div></div>`;
     const k = p.hand.length;
     const rw = W * 0.6 - 20;
-    const cw = Math.round(Math.max(52, Math.min(92, Hh * 0.215)));
-    const gap = k > 1 ? Math.round(Math.max(-cw * 0.76, Math.min(6, (rw - cw * k) / (k - 1)))) : 0;
-    hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
+    // kartlar üst üste binmeden yan yana sığsın; küçükse sade (okunur) kart görünümü
+    const fit = Math.floor((rw - Math.max(0, k - 1) * 4) / Math.max(1, k));
+    const cw = Math.round(Math.max(50, Math.min(92, Hh * 0.215, fit)));
+    const gap = k > 1 ? Math.round(Math.max(-cw * 0.7, Math.min(4, (rw - cw * k) / (k - 1)))) : 0;
+    hand = `<div class="r-hand hand3${cw < 80 ? ' cmp' : ''}" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
   return `<div class="game lp3">${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
 }
+function cardSecs(secs, sel = new Set()) {
+  // bölümler halinde gerçek kartlar; kart boyu ekrana sığacak şekilde (render sonrası ayrıca küçültülür)
+  const availW = window.innerWidth - 44, availH = window.innerHeight - 88, GAP = 5, PAD = 16, LBL = 34;
+  const fits = cw => {
+    let x = 0, lines = 1;
+    for (const sec of secs) {
+      let w = sec.cards.length * cw + (sec.cards.length - 1) * GAP + PAD;
+      while (w > availW) { if (x > 0) { lines++; x = 0; } const per = Math.max(1, Math.floor((availW - PAD + GAP) / (cw + GAP))); w -= per * (cw + GAP); lines++; }
+      if (x > 0 && x + w + 8 > availW) { lines++; x = 0; }
+      x += w + 8;
+    }
+    return lines * (cw * 1.42 + LBL + 10) <= availH;
+  };
+  let cw = 112; while (cw > 46 && !fits(cw)) cw -= 2;
+  const html = secs.map(sec => `<section class="psec ${sec.cls || ''}${sec.k != null ? ' pick' : ''}" style="${sec.hex ? `--c:${sec.hex}` : ''}"${sec.k != null ? ` data-k="${sec.k}" role="button"` : ''}><h4>${sec.label}</h4><div class="pcs">${sec.cards.map(o =>
+    `<div class="pc${o.dis ? ' dis' : ''}${sel.has(o.id) ? ' on' : ''}${o.hl ? ' hl' : ''}">${cardHTML(o.id, { color: o.color, k: o.dis || o.ro ? null : o.k, sel: sel.has(o.id) })}</div>`).join('')}</div></section>`).join('') || '<span class="muted">Burada kart yok.</span>';
+  return `<div class="pay-cards" style="--cw:${cw}px" data-sk="sheetcards">${html}</div>`;
+}
+const sheetTop = (title, sub, btns) => `<!--sheet--><div class="pay-top"><div class="pt"><b>${title}</b>${sub ? `<div class="sub">${sub}</div>` : ''}</div><div class="pa">${btns}</div></div>`;
 function payLand() {
   const s = S(), pd = s.pending, p = me(), sel = app.ui.sel;
   const total = Engine.assetTotal(p);
@@ -2066,38 +2123,21 @@ function payLand() {
   // bölümler: banka + her renk grubu; kartlar gerçek kart olarak, ekrana sığacak boyda
   const secs = [];
   const bk = p.bank.slice().sort((a, b) => C(a).v - C(b).v);
-  if (bk.length) secs.push({ label: `Banka ${bankTotal(p)}M`, cls: 'bank', cards: bk.map(id => ({ id })) });
+  if (bk.length) secs.push({ label: `Banka ${bankTotal(p)}M`, cls: 'bank', cards: bk.map(id => ({ id, k: toggle(id) })) });
   p.stacks.forEach(st => {
     const col = COLORS[st.color];
-    const cards = st.cards.map(id => ({ id, color: st.color, dis: !(C(id).v > 0) }));
-    if (st.house != null) cards.push({ id: st.house }); if (st.hotel != null) cards.push({ id: st.hotel });
+    const cards = st.cards.map(id => ({ id, color: st.color, dis: !(C(id).v > 0), k: toggle(id) }));
+    if (st.house != null) cards.push({ id: st.house, k: toggle(st.house) }); if (st.hotel != null) cards.push({ id: st.hotel, k: toggle(st.hotel) });
     secs.push({ label: `${col.n} ${st.cards.length}/${col.size}${Engine.complete(st) ? ' ✓' : ''}`, hex: col.hex, cards });
   });
-  const availW = window.innerWidth - 44, availH = window.innerHeight - 88, GAP = 5, PAD = 16, LBL = 34;
-  const fits = cw => {
-    let x = 0, lines = 1;
-    for (const sec of secs) {
-      let w = sec.cards.length * cw + (sec.cards.length - 1) * GAP + PAD;
-      while (w > availW) { // bölüm satıra sığmazsa kırılır
-        if (x > 0) { lines++; x = 0; }
-        const per = Math.max(1, Math.floor((availW - PAD + GAP) / (cw + GAP)));
-        w -= per * (cw + GAP); lines++;
-      }
-      if (x > 0 && x + w + 8 > availW) { lines++; x = 0; }
-      x += w + 8;
-    }
-    return lines * (cw * 1.42 + LBL + 10) <= availH;
-  };
-  let cw = 112; while (cw > 46 && !fits(cw)) cw -= 2;
-  const body = secs.map(sec => `<section class="psec ${sec.cls || ''}" style="${sec.hex ? `--c:${sec.hex}` : ''}"><h4>${esc(sec.label)}</h4><div class="pcs">${sec.cards.map(o =>
-    `<div class="pc${o.dis ? ' dis' : ''}${sel.has(o.id) ? ' on' : ''}">${cardHTML(o.id, { color: o.color, k: o.dis ? null : toggle(o.id), sel: sel.has(o.id) })}</div>`).join('')}</div></section>`).join('') || '<span class="muted">Ödeyecek bir şeyin yok.</span>';
+  const body = cardSecs(secs, sel);
   const pct = Math.min(100, Math.round(100 * sum / Math.max(1, Math.min(pd.amount, total))));
   const kAuto = cb(() => { app.ui.sel = new Set(Bot.choosePayment(p, pd.amount)); render(); });
   const kPay = cb(() => send({ t: 'pay', cards: [...sel] }));
-  return `<div class="pay-top"><div class="pt"><b>${describePending(s)}</b>
+  return `<!--sheet--><div class="pay-top"><div class="pt"><b>${describePending(s)}</b>
       <div class="meter"><i style="width:${pct}%"></i><span>Seçilen <b>${sum}M</b> / borç <b>${pd.amount}M</b>${total < pd.amount ? ` · varlığın ${total}M, hepsini vermelisin` : ' · para üstü verilmez'}</span></div></div>
     <div class="pa">${jsn ? `<button class="danger" data-k="${cb(() => send({ t: 'jsn' }))}">✋ Reddet (${jsn})</button>` : ''}<button data-k="${kAuto}">Otomatik</button><button class="primary" ${valid ? '' : 'disabled'} data-k="${kPay}">${sum ? `${sum}M öde` : 'Öde'}</button></div></div>
-    <div class="pay-cards" style="--cw:${cw}px" data-sk="paycards">${body}</div>`;
+    ${body}`;
 }
 function oppModal(m) {
   const s = S(), my = app.mySeat, n = s.players.length;
@@ -2304,7 +2344,7 @@ function modalHTML() {
   try { body = renderModal(m); } catch (e) { console.error(e); body = '<h3>Bir hata oluştu</h3>'; }
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
-  return `<div class="veil" data-k="${kClose}"><div class="modal${m.type === 'respond' && S() && S().pending && S().pending.stage !== 'actor' && S().pending.kind !== 'steal' ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
+  return `<div class="veil" data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
 
@@ -2410,34 +2450,46 @@ function cardModal(m) {
         return head + `<div class="opts">${anyTake && anyGive ? optBtn(c.a === 'sly' ? 'Oyna: alacağın tapu senedini seç' : 'Oyna: takas edilecek tapu senetlerini seç', '', go({ step: 'take' }), 'primary')
           : `<div class="notice">${!anyTake ? 'Rakiplerin tamamlanmamış setlerinde alınabilecek tapu yok.' : 'Takas için tamamlanmamış bir setinde tapu olmalı.'}</div>`}${bankOpt}</div>` + cancelBtn();
       }
+      const cancelTop = `<button class="ghost" data-k="${cb(closeModal)}">Vazgeç</button>`;
       if (step === 'take') {
-        const groups = s.players.map((q, i) => {
-          if (i === app.mySeat) return '';
-          const sts = q.stacks.filter(st => !Engine.complete(st));
-          if (!sts.length) return '';
-          return `<div class="who"><b>${esc(q.name)}</b><div class="stacks">${sts.map(st => stackHTML(st, 'md', { cardK: x => cb(() => {
-            if (c.a === 'sly') { app.ui.modal = null; send({ t: 'play', card: id, target: i, take: x }); }
-            else openModalKeep({ ...m, step: 'give', target: i, take: x });
-          }) })).join('')}</div></div>`;
-        }).join('');
-        return `<h3>${c.a === 'sly' ? 'Hangi tapuyu alacaksın?' : 'Rakipten hangi tapuyu alacaksın?'}</h3><div class="muted">Bir karta tıkla. Tam setlerden alınamaz.</div>${groups}` + cancelBtn();
+        const secs = [];
+        s.players.forEach((q, i) => {
+          if (i === app.mySeat) return;
+          q.stacks.filter(st => !Engine.complete(st)).forEach(st => {
+            const col = COLORS[st.color];
+            secs.push({ label: `${esc(q.name)} · ${col.n} ${st.cards.length}/${col.size}`, hex: col.hex, cards: st.cards.map(x => ({ id: x, color: st.color, k: cb(() => {
+              if (c.a === 'sly') { app.ui.modal = null; send({ t: 'play', card: id, target: i, take: x }); }
+              else openModalKeep({ ...m, step: 'give', target: i, take: x });
+            }) })) });
+          });
+        });
+        return sheetTop(c.a === 'sly' ? 'Tapu Devri: hangi tapuyu alacaksın?' : 'Değiş Tokuş: rakipten hangi tapuyu alacaksın?', 'Almak istediğin karta dokun. Tam setlerden alınamaz.', cancelTop) + cardSecs(secs);
       }
       if (step === 'give') {
-        const sts = p.stacks.filter(st => !Engine.complete(st));
-        return `<h3>Karşılığında hangi tapunu vereceksin?</h3><div class="row">Alınacak: ${cardHTML(m.take, { size: 'md', color: Engine.colorOnTable(s.players[m.target], m.take) })}</div>
-          <div class="stacks">${sts.map(st => stackHTML(st, 'md', { cardK: x => cb(() => { app.ui.modal = null; send({ t: 'play', card: id, target: m.target, take: m.take, give: x }); }) })).join('')}</div>` + cancelBtn();
+        const tq = s.players[m.target], tcol = Engine.colorOnTable(tq, m.take);
+        const secs = [{ label: `Alacağın · ${esc(tq.name)}`, hex: '#f5c518', cards: [{ id: m.take, color: tcol, ro: true, hl: true }] }];
+        p.stacks.filter(st => !Engine.complete(st)).forEach(st => {
+          const col = COLORS[st.color];
+          secs.push({ label: `Senin ${col.n} ${st.cards.length}/${col.size}`, hex: col.hex, cards: st.cards.map(x => ({ id: x, color: st.color, k: cb(() => { app.ui.modal = null; send({ t: 'play', card: id, target: m.target, take: m.take, give: x }); }) })) });
+        });
+        return sheetTop('Değiş Tokuş: karşılığında hangi tapunu vereceksin?', 'Vereceğin karta dokun. Tam setlerinden veremezsin.', `<button class="ghost" data-k="${cb(() => openModalKeep({ ...m, step: 'take' }))}">← Geri</button>` + cancelTop) + cardSecs(secs);
       }
       break;
     }
     case 'dealbreaker': {
       const any = s.players.some((q, i) => i !== app.mySeat && q.stacks.some(Engine.complete));
       if (step === 'main') return head + `<div class="opts">${any ? optBtn('Oyna: alınacak seti seç', '', go({ step: 'set' }), 'primary') : '<div class="notice">Rakiplerin hiç tam seti yok.</div>'}${bankOpt}</div>` + cancelBtn();
-      const groups = s.players.map((q, i) => {
-        if (i === app.mySeat) return '';
-        const sts = q.stacks.filter(Engine.complete); if (!sts.length) return '';
-        return `<div class="who"><b>${esc(q.name)}</b><div class="stacks">${sts.map(st => stackHTML(st, 'md', { stackK: cb(() => { app.ui.modal = null; send({ t: 'play', card: id, target: i, sid: st.sid }); }) })).join('')}</div></div>`;
-      }).join('');
-      return `<h3>Hangi seti alacaksın?</h3><div class="muted">Sete tıkla.</div>${groups}` + cancelBtn();
+      const secs = [];
+      s.players.forEach((q, i) => {
+        if (i === app.mySeat) return;
+        q.stacks.filter(Engine.complete).forEach(st => {
+          const col = COLORS[st.color], k = cb(() => { app.ui.modal = null; send({ t: 'play', card: id, target: i, sid: st.sid }); });
+          const cards = st.cards.map(x => ({ id: x, color: st.color, k }));
+          if (st.house != null) cards.push({ id: st.house, k }); if (st.hotel != null) cards.push({ id: st.hotel, k });
+          secs.push({ label: `${esc(q.name)} · ${col.n} (kira ${rentOfStack(st)}M)`, hex: col.hex, k, cards });
+        });
+      });
+      return sheetTop('Haciz: hangi tam seti alacaksın?', 'Sete dokun. Ev ve otel de setle birlikte gelir.', `<button class="ghost" data-k="${cb(closeModal)}">Vazgeç</button>`) + cardSecs(secs);
     }
   }
   return head + cancelBtn();
@@ -2485,15 +2537,21 @@ function respondModal() {
   }
   const title = `<h3>${describePending(s)}</h3>`;
   if (pd.kind === 'steal') {
-    let preview = '';
-    if (pd.act === 'dealbreaker') { const st = p.stacks.find(x => x.sid === pd.sid); preview = st ? stackHTML(st, 'md') : ''; }
-    else {
-      preview = `<div class="row"><span class="muted">Senden alınacak:</span>${cardHTML(pd.take, { size: 'md', color: Engine.colorOnTable(p, pd.take) })}`;
-      if (pd.act === 'forced') preview += `<span class="muted">Sana verilecek:</span>${cardHTML(pd.give, { size: 'md', color: Engine.colorOnTable(s.players[pd.actor], pd.give) })}`;
-      preview += '</div>';
+    const secs = [];
+    if (pd.act === 'dealbreaker') {
+      const st = p.stacks.find(x => x.sid === pd.sid);
+      if (st) { const col = COLORS[st.color]; const cards = st.cards.map(x => ({ id: x, color: st.color, ro: true }));
+        if (st.house != null) cards.push({ id: st.house, ro: true }); if (st.hotel != null) cards.push({ id: st.hotel, ro: true });
+        secs.push({ label: `Senden alınacak set · ${col.n}`, hex: col.hex, cards }); }
+    } else {
+      const tc = Engine.colorOnTable(p, pd.take);
+      secs.push({ label: 'Senden alınacak', hex: tc ? COLORS[tc].hex : '#c0392b', cards: [{ id: pd.take, color: tc, ro: true, hl: true }] });
+      if (pd.act === 'forced') { const gc = Engine.colorOnTable(s.players[pd.actor], pd.give); secs.push({ label: 'Sana verilecek', hex: gc ? COLORS[gc].hex : '#2e8b57', cards: [{ id: pd.give, color: gc, ro: true }] }); }
     }
-    return `${title}${preview}<div class="row">${jsnBtn}<button class="primary" data-k="${cb(() => send({ t: 'accept' }))}">Kabul et</button></div>`;
+    const btns = `${jsn ? `<button class="danger" data-k="${kJ}">✋ Reddet (${jsn})</button>` : ''}<button class="primary" data-k="${cb(() => send({ t: 'accept' }))}">Kabul et</button>`;
+    return sheetTop(describePending(s), jsn ? 'Reddet kartınla bu hamleyi iptal edebilirsin.' : 'Elinde Reddet kartı yok.', btns) + cardSecs(secs);
   }
+
   // ödeme
   const sel = app.ui.sel;
   const total = Engine.assetTotal(p);
