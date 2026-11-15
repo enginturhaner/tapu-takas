@@ -1110,6 +1110,8 @@ const TX_RULES = [
   ['Özel oyun: listede görünmez, sadece kodla ya da bağlantıyla katılınır.', 'Private game: not listed, join only with the code or link.'],
   ['Herkese açık: ana sayfadaki oyun listesinde görünür.', 'Public: shown in the game list on the home page.'],
   ['Bu oyun kapandı.', 'This game has closed.'],
+  ['Kurucu oyunu kapattı.', 'The host closed the game.'],
+  ['Oyun başlamadan arka plana alındığı için kapatıldı.', 'The game was closed because it went to the background before starting.'],
   ['>Herkese açık<', '>Public<'], ['>Özel (kodla)<', '>Private (code)<'], ['>Oyun türü<', '>Game type<'],
   ['>Hepsi<', '>All<'], ['>Kişi<', '>Players<'], ['>Set<', '>Sets<'], ['>Tüm oyunlar<', '>All games<'], ['>Sadece katılınabilir<', '>Joinable only<'],
   ['>Lobide<', '>In lobby<'], ['>Başladı<', '>Started<'], ['>Dolu<', '>Full<'],
@@ -3125,6 +3127,33 @@ const playThen = a => () => { app.ui.modal = null; send(a); };
 
 
 
+
+// kurucu herkese açık lobiyi arka plana alırsa oyun kapanır, herkes ana sayfaya döner
+function gameClosed(g) {
+  if (g.status !== 'closed' || (g.state && g.state.phase === 'over')) return false;
+  if (g.host !== myUid) toast('Kurucu oyunu kapattı.');
+  forgetGame(g.code); if (app.view !== 'home') goHome();
+  return true;
+}
+let lobbyClosing = false;
+function closeLobbyIfBackground() {
+  const g = app.game;
+  if (Date.now() - (app.sharingAt || 0) < 4000) return; // WhatsApp'ta paylaşırken kapatma
+  if (lobbyClosing || app.local || !app.isHost || !g || g.status !== 'lobby' || g.priv) return;
+  lobbyClosing = true;
+  const code = app.code;
+  try { writeGame({ status: 'closed' }); } catch (e) {}
+  forgetGame(code);
+  app.closedNote = code;
+  setTimeout(() => { lobbyClosing = false; if (app.code === code) goHome(); forgetGame(code); }, 600);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) closeLobbyIfBackground();
+  else if (app.closedNote) { app.closedNote = null; toast('Oyun başlamadan arka plana alındığı için kapatıldı.'); }
+});
+window.addEventListener('pagehide', closeLobbyIfBackground);
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('a.btnlink')) app.sharingAt = Date.now(); }, true);
+
 // reddedilen oyun: herkes yazıyı görsün, sonra oyun listeden silinip ana sayfaya dönülsün
 let closeTimer = null;
 function forgetGame(code) {
@@ -3604,6 +3633,8 @@ function refreshLobbies() {
   if (app.view === 'home') render();
 }
 setInterval(refreshLobbies, 30e3);
+// 2 saattir oynanmamış oyunlar ana sayfadan da düşsün
+setInterval(() => { if (app.view === 'home') { loadMyGames(); render(); } }, 60e3);
 window.addEventListener('pagehide', () => dirClear());
 function dirPublish() {
   if (!dirMq || !dirMq.connected) return;
@@ -3619,8 +3650,8 @@ function dirClear() { if (dirCode && dirMq && dirMq.connected) { try { dirMq.pub
 // ---- son oyunlar (bu tarayıcıda) ----
 function loadMyGames() {
   try { app.myGames = JSON.parse(lsGet('td_games') || '[]'); } catch (e) { app.myGames = []; }
-  // 3 gündür oynanmamış oyunlar silinir, listede gösterilmez
-  const STALE = 3 * 24 * 3600e3, now = Date.now();
+  // 2 saattir oynanmamış oyunlar silinir, listede gösterilmez
+  const STALE = 2 * 3600e3, now = Date.now();
   const old = app.myGames.filter(g => now - (g.updated || 0) > STALE);
   if (old.length) {
     old.forEach(g => { try { localStorage.removeItem('td_host_' + g.code); } catch (e) {} });
@@ -3774,6 +3805,7 @@ function scheduleReconnect() {
 
 function onGame(g) {
   if (!g || g.code !== app.code) return;
+  if (gameClosed(g)) return;
   app.game = g;
   app.mySeat = (g.players || []).findIndex(p => p.uid === myUid);
   if (app.mySeat < 0 && g.status !== 'lobby') { toast(g.status === 'playing' ? 'Bu oyun başlamış, artık katılınamaz.' : 'Bu oyun kapandı.'); goHome(); return; }
