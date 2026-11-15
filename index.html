@@ -885,12 +885,16 @@ html{background:#0f442f}
 .pt3 .pend3 .e3{flex:1;min-height:40px;font-size:16px;font-weight:800;border-radius:14px}
 .pt3 .pend3 .e3[disabled]{font-size:14px}
 /* yatay ekran: Sırayı bitir elin altında */
-.lp3 .lend3{flex:0 0 auto;display:flex;justify-content:flex-end;padding:0 0 max(env(safe-area-inset-bottom),6px)}
-.lp3 .lend3 .e3{min-height:34px;min-width:44%;font-size:14px;font-weight:800;border-radius:12px}
+.lp3 .lend3{flex:0 0 auto;display:flex;justify-content:flex-end;padding:0}
+.lp3 .lend3 .e3{min-height:32px;min-width:40%;font-size:14px;font-weight:800;border-radius:12px}
+
+/* yatay ekran: masa kalabalıklaşınca kendi içinde kaysın, el ve buton hep görünsün */
+.lp3 .t3{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.lp3 .hand3{flex:1 0 auto;min-height:clamp(70px,24vh,130px)}
 
 </style></head><body><div id="app"></div>
 <script>
-window.BUILD_ID="1794733800";
+window.BUILD_ID="1794734007";
 // ===== DİL (Türkçe / English) =====
 // Oyun metinleri Türkçe yazılı; İngilizce seçilince ekrana basılmadan önce bu tabloyla çevrilir.
 let LANG = (() => { try { return localStorage.getItem('td_lang') || 'tr'; } catch (e) { return 'tr'; } })();
@@ -2859,7 +2863,7 @@ function landHTML() {
     hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
   const zs = Z > 1 ? ` style="zoom:${Z.toFixed(3)};width:${W.toFixed(1)}px;height:${Hh.toFixed(1)}px;right:auto;bottom:auto"` : '';
-  return `<div class="game lp3"${zs}>${left}<main class="m3">${hdr}${table}${feed}${hand}${endBtn ? `<div class="lend3">${endBtn}</div>` : ''}</main></div>`;
+  return `<div class="game lp3"${zs}>${left}<main class="m3">${hdr}${table}${feed}${endBtn ? `<div class="lend3">${endBtn}</div>` : ''}${hand}</main></div>`;
 }
 const minBtn = () => `<button class="ghost minb" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}" title="Sayfayı küçült, masaya bak">▾ Masaya bak</button>`;
 function cardSecs(secs, sel = new Set()) {
