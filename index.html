@@ -881,8 +881,8 @@ html{background:#0f442f}
 .flt .fr span{flex-basis:100%;margin-top:2px}
 
 /* dik ekran: Sırayı bitir en altta, başparmak hizasında */
-.pt3 .pend3{flex:0 0 auto;display:flex;padding:2px 0 2px}
-.pt3 .pend3 .e3{flex:1;min-height:46px;font-size:16px;font-weight:800;border-radius:14px}
+.pt3 .pend3{flex:0 0 auto;display:flex;padding:0}
+.pt3 .pend3 .e3{flex:1;min-height:40px;font-size:16px;font-weight:800;border-radius:14px}
 .pt3 .pend3 .e3[disabled]{font-size:14px}
 /* yatay ekran: Sırayı bitir elin altında */
 .lp3 .lend3{flex:0 0 auto;display:flex;justify-content:flex-end;padding:0 0 max(env(safe-area-inset-bottom),6px)}
@@ -890,7 +890,7 @@ html{background:#0f442f}
 
 </style></head><body><div id="app"></div>
 <script>
-window.BUILD_ID="1794733447";
+window.BUILD_ID="1794733800";
 // ===== DİL (Türkçe / English) =====
 // Oyun metinleri Türkçe yazılı; İngilizce seçilince ekrana basılmadan önce bu tabloyla çevrilir.
 let LANG = (() => { try { return localStorage.getItem('td_lang') || 'tr'; } catch (e) { return 'tr'; } })();
@@ -2722,6 +2722,9 @@ function lobbyHTML() {
 // yatay düzen: yan tutulan telefon VE bilgisayar (geniş ekran). Büyük ekranda aynı düzen büyütülerek çizilir.
 const isLand = () => window.innerWidth > window.innerHeight;
 const landZoom = () => Math.max(1, Math.min(2.2, Math.min(window.innerWidth / 900, window.innerHeight / 430)));
+// dik ekran: sayfa telefonun boyutuna göre ölçeklenir (390×800 referans)
+const viewH = () => Math.max(window.innerHeight, (document.documentElement && document.documentElement.clientHeight) || 0);
+const portZoom = () => Math.max(0.8, Math.min(1.4, Math.min(window.innerWidth / 390, viewH() / 800)));
 const isPortraitPhone = () => window.innerWidth <= 720 && window.innerHeight > window.innerWidth;
 function lpCoins(p, cls = '') {
   const cnt = {}; p.bank.forEach(id => { const v = C(id).v; cnt[v] = (cnt[v] || 0) + 1; });
@@ -2785,7 +2788,7 @@ function o3HTML(i, ow) {
 function portHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
-  const W = window.innerWidth, Hh = window.innerHeight;
+  const Z = portZoom(), W = window.innerWidth / Z, Hh = viewH() / Z;
   const ow = Math.round(Math.max(44, Math.min(58, W * 0.13)));
   const dots = [0, 1, 2].map(i => `<i class="${i < s.playsLeft ? 'on' : ''}"></i>`).join('');
   const mine = s.turn === my;
@@ -2810,7 +2813,8 @@ function portHTML() {
     const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
     hand = `<div class="r-hand hand3 ph3hand" style="--cw:${cw}px;height:${Math.round(cw * 1.42) + 8}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
-  return `<div class="game pt3">${hdr}${opps}${feed}${table}${hand}${endBtn ? `<div class="pend3">${endBtn}</div>` : ''}</div>`;
+  const zs = ` style="zoom:${Z.toFixed(3)};width:${W.toFixed(1)}px;height:${Hh.toFixed(1)}px;right:auto;bottom:auto;padding-top:calc((var(--topsafe) + 8px) / ${Z.toFixed(3)}) !important;padding-bottom:calc((env(safe-area-inset-bottom) + 4px) / ${Z.toFixed(3)}) !important"`;
+  return `<div class="game pt3"${zs}>${hdr}${opps}${feed}${table}${endBtn ? `<div class="pend3">${endBtn}</div>` : ''}${hand}</div>`;
 }
 function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
@@ -3123,7 +3127,7 @@ function modalHTML() {
   if (body == null) { app.ui.modal = null; return ''; }
   const kClose = cb(e => { if (e.target.classList.contains('veil') && m.closable !== false) closeModal(); });
   const fab = (m.type === 'respond' || m.type === 'discard') ? `<button class="minfab" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}">▾ Masaya bak</button>` : '';
-  const vz = app.view === 'game' && isLand() && landZoom() > 1 ? (() => { const z = landZoom(); return ` style="zoom:${z.toFixed(3)};width:${(innerWidth / z).toFixed(1)}px;height:${(innerHeight / z).toFixed(1)}px;right:auto;bottom:auto"`; })() : '';
+  const vz = app.view === 'game' && isLand() && landZoom() > 1 ? (() => { const z = landZoom(); return ` style="zoom:${z.toFixed(3)};width:${(innerWidth / z).toFixed(1)}px;height:${(innerHeight / z).toFixed(1)}px;right:auto;bottom:auto"`; })() : (app.view === 'game' && !isLand() ? ` style="height:${viewH()}px;bottom:auto"` : '');
   return pill + fab + `<div class="veil${m.type === 'over' ? ' over' : ''}"${vz} data-k="${kClose}"><div class="modal${body.startsWith('<!--sheet-->') ? ' sheet' : ''}" role="dialog" aria-modal="true" data-sk="m-${m.type}-${m.seat ?? ''}">${body}</div></div>`;
 }
 const stateKey = () => { const s = S(); return s ? `${s.v}|${s.pending ? s.pending.cur + s.pending.stage + s.pending.jsn : ''}` : ''; };
