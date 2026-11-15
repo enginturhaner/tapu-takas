@@ -884,6 +884,9 @@ html{background:#0f442f}
 .pt3 .pend3{flex:0 0 auto;display:flex;padding:2px 0 2px}
 .pt3 .pend3 .e3{flex:1;min-height:46px;font-size:16px;font-weight:800;border-radius:14px}
 .pt3 .pend3 .e3[disabled]{font-size:14px}
+/* yatay ekran: Sırayı bitir elin altında */
+.lp3 .lend3{flex:0 0 auto;display:flex;justify-content:flex-end;padding:0 0 max(env(safe-area-inset-bottom),6px)}
+.lp3 .lend3 .e3{min-height:34px;min-width:44%;font-size:14px;font-weight:800;border-radius:12px}
 
 </style></head><body><div id="app"></div>
 <script>
@@ -2830,7 +2833,7 @@ function landHTML() {
   let endBtn = '';
   if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary e3" disabled>Önce oyna (7+ kart)</button>` : `<button class="primary e3" data-k="${cb(() => send({ t: 'end' }))}">Sırayı bitir</button>`;
   const hdr = `<div class="h3"><span class="turnp${mine ? '' : ' other'}">${mine ? 'Sıra sende' : 'Sıra: ' + esc(s.players[s.turn].name)}</span><span class="dots">${dots}</span>
-    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}<span class="sp"></span>${endBtn}
+    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}<span class="sp"></span>
     <button class="ghost lp-menu" aria-label="Menü" data-k="${cb(() => openModal({ type: 'menu' }))}">≡</button></div>`;
   const showStatus = s.phase === 'over' || s.pending || s.phase === 'discard';
   const st = showStatus ? `<p class="now">${statusHTML().replace(/<[^>]+>/g, ' ')}</p>` : '';
@@ -2851,7 +2854,7 @@ function landHTML() {
     hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
   const zs = Z > 1 ? ` style="zoom:${Z.toFixed(3)};width:${W.toFixed(1)}px;height:${Hh.toFixed(1)}px;right:auto;bottom:auto"` : '';
-  return `<div class="game lp3"${zs}>${left}<main class="m3">${hdr}${table}${feed}${hand}</main></div>`;
+  return `<div class="game lp3"${zs}>${left}<main class="m3">${hdr}${table}${feed}${hand}${endBtn ? `<div class="lend3">${endBtn}</div>` : ''}</main></div>`;
 }
 const minBtn = () => `<button class="ghost minb" data-k="${cb(() => { app.ui.minKey = stateKey(); app.ui.respSel = app.ui.sel; app.ui.modal = null; render(); })}" title="Sayfayı küçült, masaya bak">▾ Masaya bak</button>`;
 function cardSecs(secs, sel = new Set()) {
