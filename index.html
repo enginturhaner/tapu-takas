@@ -880,6 +880,11 @@ html{background:#0f442f}
 .fltw summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--gold);padding:2px 0 6px}
 .flt .fr span{flex-basis:100%;margin-top:2px}
 
+/* dik ekran: Sırayı bitir en altta, başparmak hizasında */
+.pt3 .pend3{flex:0 0 auto;display:flex;padding:2px 0 2px}
+.pt3 .pend3 .e3{flex:1;min-height:46px;font-size:16px;font-weight:800;border-radius:14px}
+.pt3 .pend3 .e3[disabled]{font-size:14px}
+
 </style></head><body><div id="app"></div>
 <script>
 // ===== DİL (Türkçe / English) =====
@@ -2783,7 +2788,7 @@ function portHTML() {
   let endBtn = '';
   if (myTurnFree()) endBtn = Engine.mustPlay(s) ? `<button class="primary e3" disabled>Önce oyna (7+ kart)</button>` : `<button class="primary e3" data-k="${cb(() => send({ t: 'end' }))}">Sırayı bitir</button>`;
   const hdr = `<div class="h3"><span class="turnp${mine ? '' : ' other'}">${mine ? 'Sıra sende' : 'Sıra: ' + esc(s.players[s.turn].name)}</span><span class="dots">${dots}</span>
-    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}<span class="sp"></span>${endBtn}
+    ${app.netStatus === 'down' ? '<span class="pill" style="background:#b5382b">bağlantı yok</span>' : ''}<span class="sp"></span>
     <button class="ghost lp-menu" aria-label="Menü" data-k="${cb(() => openModal({ type: 'menu' }))}">≡</button></div>`;
   const opps = `<div class="po3" data-sk="rail">${order.map(i => o3HTML(i, ow)).join('')}</div>`;
   const showStatus = s.phase === 'over' || s.pending || s.phase === 'discard';
@@ -2801,7 +2806,7 @@ function portHTML() {
     const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
     hand = `<div class="r-hand hand3 ph3hand" style="--cw:${cw}px;height:${Math.round(cw * 1.42) + 8}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
-  return `<div class="game pt3">${hdr}${opps}${feed}${table}${hand}</div>`;
+  return `<div class="game pt3">${hdr}${opps}${feed}${table}${hand}${endBtn ? `<div class="pend3">${endBtn}</div>` : ''}</div>`;
 }
 function landHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
