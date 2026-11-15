@@ -894,7 +894,7 @@ html{background:#0f442f}
 
 </style></head><body><div id="app"></div>
 <script>
-window.BUILD_ID="1794734007";
+window.BUILD_ID="1794743788";
 // ===== DİL (Türkçe / English) =====
 // Oyun metinleri Türkçe yazılı; İngilizce seçilince ekrana basılmadan önce bu tabloyla çevrilir.
 let LANG = (() => { try { return localStorage.getItem('td_lang') || 'tr'; } catch (e) { return 'tr'; } })();
@@ -2789,6 +2789,22 @@ function o3HTML(i, ow) {
     <div class="gs" data-sk="g${i}">${gs}</div></section>`;
 }
 // ---------- TELEFON DİK ----------
+
+// el sıralaması: tapular renge göre (en pahalı kiralı renk solda), sonra hamle kartları türüne göre (en pahalısı solda), en sonda para
+function sortHand(ids) {
+  const top = c => Math.max(...COLORS[c].rent);
+  const key = id => {
+    const c = C(id);
+    if (c.k === 'prop' || c.k === 'wild') {
+      const col = c.k === 'prop' ? c.color : Array.isArray(c.colors) ? c.colors.slice().sort((x, y) => top(y) - top(x))[0] : null;
+      return [0, col ? -top(col) : 1, col || 'zz', c.k === 'prop' ? 0 : 1, -c.v, c.name];
+    }
+    if (c.k === 'act' || c.k === 'rent') return [1, -c.v, c.k === 'rent' ? 'rent:' + [].concat(c.colors).join('-') : 'act:' + c.a, 0, 0, ''];
+    return [2, -c.v, '', 0, 0, ''];
+  };
+  return ids.slice().sort((x, y) => { const a = key(x), b = key(y); for (let i = 0; i < a.length; i++) { if (a[i] < b[i]) return -1; if (a[i] > b[i]) return 1; } return x - y; });
+}
+
 function portHTML() {
   const s = S(), n = s.players.length, my = app.mySeat, spectator = my < 0;
   const order = spectator ? s.players.map((_, i) => i) : Array.from({ length: n - 1 }, (_, k) => (my + 1 + k) % n);
@@ -2815,7 +2831,7 @@ function portHTML() {
     const fit = Math.floor(rw / (1 + 0.6 * Math.max(0, k - 1)));
     const cw = Math.round(Math.max(56, Math.min(104, Hh * 0.13, fit)));
     const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
-    hand = `<div class="r-hand hand3 ph3hand" style="--cw:${cw}px;height:${Math.round(cw * 1.42) + 8}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
+    hand = `<div class="r-hand hand3 ph3hand" style="--cw:${cw}px;height:${Math.round(cw * 1.42) + 8}px"><div class="row">${sortHand(p.hand).map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
   const zs = ` style="zoom:${Z.toFixed(3)};width:${W.toFixed(1)}px;height:${Hh.toFixed(1)}px;right:auto;bottom:auto;padding-top:calc((var(--topsafe) + 8px) / ${Z.toFixed(3)}) !important;padding-bottom:calc((env(safe-area-inset-bottom) + 4px) / ${Z.toFixed(3)}) !important"`;
   return `<div class="game pt3"${zs}>${hdr}${opps}${feed}${table}${endBtn ? `<div class="pend3">${endBtn}</div>` : ''}${hand}</div>`;
@@ -2860,7 +2876,7 @@ function landHTML() {
     const fit = Math.floor(rw / (1 + 0.6 * Math.max(0, k - 1)));
     const cw = Math.round(Math.max(56, Math.min(104, Hh * 0.27, fit)));
     const gap = k > 1 ? Math.round(Math.max(-cw * 0.4, Math.min(5, (rw - cw * k) / (k - 1)))) : 0;
-    hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${p.hand.map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
+    hand = `<div class="r-hand hand3" style="--cw:${cw}px"><div class="row">${sortHand(p.hand).map((id, i) => `<div class="hs" style="margin-left:${i ? gap : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`).join('')}</div></div>`;
   }
   const zs = Z > 1 ? ` style="zoom:${Z.toFixed(3)};width:${W.toFixed(1)}px;height:${Hh.toFixed(1)}px;right:auto;bottom:auto"` : '';
   return `<div class="game lp3"${zs}>${left}<main class="m3">${hdr}${table}${feed}${endBtn ? `<div class="lend3">${endBtn}</div>` : ''}${hand}</main></div>`;
@@ -2980,7 +2996,7 @@ function gameHTML() {
     const p = me();
     const free = myTurnFree() && s.playsLeft > 0;
     handHtml = `<div class="handbar"><div class="row"><b>Elin (${p.hand.length})</b><span class="muted" style="font-size:13px">${free ? 'Oynamak istediğin karta tıkla.' : (s.turn === my && s.phase === 'discard' ? 'Fazla kartları atman gerekiyor.' : 'Kartlara bakabilirsin; sıra sende değil.')}</span></div>
-      <div class="hand arc">${p.hand.map((id, i) => { const n = p.hand.length, off = i - (n - 1) / 2, step = Math.min(5, 36 / Math.max(n, 1));
+      <div class="hand arc">${sortHand(p.hand).map((id, i) => { const n = p.hand.length, off = i - (n - 1) / 2, step = Math.min(5, 36 / Math.max(n, 1));
         return `<div class="hs" style="--r:${(off * step).toFixed(1)}deg;--y:${(Math.abs(off) * Math.abs(off) * (n > 8 ? 1.2 : 2.2)).toFixed(1)}px;margin-left:${i ? handGap(n) : 0}px">${cardHTML(id, { k: cb(() => openModal({ type: 'card', id })) })}</div>`; }).join('')}</div></div>`;
   }
   const rot = isPortraitPhone() ? '<div class="rot-hint">↻ Daha rahat oynamak için telefonu yan çevir</div>' : '';
@@ -3426,7 +3442,7 @@ function respondModal() {
 
 function discardModal() {
   const p = me(), need = p.hand.length - 7, sel = app.ui.sel;
-  const secs = [{ label: `Elin (${p.hand.length})`, cards: p.hand.map(id => ({ id, k: cb(() => { sel.has(id) ? sel.delete(id) : (sel.size < need && sel.add(id)); render(); }) })) }];
+  const secs = [{ label: `Elin (${p.hand.length})`, cards: sortHand(p.hand).map(id => ({ id, k: cb(() => { sel.has(id) ? sel.delete(id) : (sel.size < need && sel.add(id)); render(); }) })) }];
   const btn = `<button class="primary" ${sel.size === need ? '' : 'disabled'} data-k="${cb(() => send({ t: 'discard', cards: [...sel] }))}">${sel.size}/${need} kartı at</button>`;
   return sheetTop(`Elinde ${p.hand.length} kart var: ${need} kart at`, 'Sıra sonunda elinde en fazla 7 kart kalabilir. Atacağın kartlara dokun.', btn) + cardSecs(secs, sel);
 }
