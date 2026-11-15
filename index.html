@@ -890,6 +890,7 @@ html{background:#0f442f}
 
 </style></head><body><div id="app"></div>
 <script>
+window.BUILD_ID="1794733447";
 // ===== DİL (Türkçe / English) =====
 // Oyun metinleri Türkçe yazılı; İngilizce seçilince ekrana basılmadan önce bu tabloyla çevrilir.
 let LANG = (() => { try { return localStorage.getItem('td_lang') || 'tr'; } catch (e) { return 'tr'; } })();
@@ -3846,5 +3847,24 @@ function netSend(a) {
   }
   render();
 })();
+
+// ---- yeni sürüm kontrolü: ana ekrana eklenen uygulama eski kopyada kalmasın ----
+let newVer = false;
+async function checkVersion() {
+  if (newVer || !window.BUILD_ID) return;
+  try {
+    const t = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text());
+    const m = t.match(/window\.BUILD_ID="(\d+)"/);
+    if (!m || m[1] === window.BUILD_ID) return;
+    newVer = true;
+    if (app.view === 'home') { location.reload(); return; }
+    toast('Yeni sürüm hazır. Ana sayfaya dönünce güncellenecek.');
+  } catch (e) {}
+}
+setInterval(checkVersion, 120e3);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
+setTimeout(checkVersion, 3000);
+const _goHome = goHome;
+goHome = function () { if (newVer) { try { history.replaceState(null, '', location.pathname); } catch (e) {} location.reload(); return; } _goHome(); };
 
 </script></body></html>
